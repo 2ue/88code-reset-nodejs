@@ -1,0 +1,67 @@
+# 依赖目录
+node_modules
+npm-debug.log
+pnpm-debug.log
+yarn-error.log
+.pnpm-store
+
+# 日志文件
+logs
+*.log
+
+# 数据目录
+data
+
+# 环境变量（安全考虑，构建时不包含真实配置）
+.env
+.env.local
+.env.*.local
+
+# Git 相关
+.git
+.gitignore
+.gitattributes
+
+# IDE 配置
+.vscode
+.idea
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# 文档（构建时不需要）
+*.md
+!README.md
+LICENSE
+
+# Docker 相关
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# 测试相关
+coverage
+.nyc_output
+test
+tests
+__tests__
+
+# 临时文件
+tmp
+temp
+*.tmp
+
+# PM2 相关
+ecosystem.config.js
+.pm2
+
+# 其他
+.editorconfig
+.prettierrc
+.eslintrc

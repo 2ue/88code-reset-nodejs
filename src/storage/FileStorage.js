@@ -1,0 +1,108 @@
+/**
+ * 文件存储
+ * 持久化执行历史和状态
+ */
+
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import Logger from '../utils/Logger.js';
+import config from '../config.js';
+
+export class FileStorage {
+    constructor() {
+        this.dataDir = config.dataDir;
+        this.init();
+    }
+
+    async init() {
+        try {
+            await fs.mkdir(this.dataDir, { recursive: true });
+        } catch (error) {
+            Logger.error('创建数据目录失败', error);
+        }
+    }
+
+    async saveResetHistory(result) {
+        if (!config.enableHistory) return;
+
+        try {
+            const filename = `reset-${new Date().toISOString().split('T')[0]}.json`;
+            const filepath = join(this.dataDir, filename);
+
+            // 读取现有记录
+            let history = [];
+            try {
+                const content = await fs.readFile(filepath, 'utf-8');
+                history = JSON.parse(content);
+            } catch {
+                // 文件不存在，创建新的
+            }
+
+            history.push({
+                timestamp: new Date().toISOString(),
+                ...result,
+            });
+
+            await fs.writeFile(filepath, JSON.stringify(history, null, 2));
+            Logger.debug(`保存重置历史: ${filename}`);
+
+        } catch (error) {
+            Logger.error('保存重置历史失败', error);
+        }
+    }
+
+    async cleanOldHistory() {
+        if (!config.enableHistory) return;
+
+        try {
+            const files = await fs.readdir(this.dataDir);
+            const now = Date.now();
+            const maxAge = config.historyMaxDays * 24 * 60 * 60 * 1000;
+
+            for (const file of files) {
+                if (!file.startsWith('reset-') || !file.endsWith('.json')) {
+                    continue;
+                }
+
+                const filepath = join(this.dataDir, file);
+                const stats = await fs.stat(filepath);
+                const age = now - stats.mtimeMs;
+
+                if (age > maxAge) {
+                    await fs.unlink(filepath);
+                    Logger.debug(`清理旧历史文件: ${file}`);
+                }
+            }
+        } catch (error) {
+            Logger.error('清理历史文件失败', error);
+        }
+    }
+
+    async getResetHistory(days = 7) {
+        if (!config.enableHistory) return [];
+
+        try {
+            const files = await fs.readdir(this.dataDir);
+            const historyFiles = files
+                .filter(f => f.startsWith('reset-') && f.endsWith('.json'))
+                .sort()
+                .reverse()
+                .slice(0, days);
+
+            const history = [];
+            for (const file of historyFiles) {
+                const filepath = join(this.dataDir, file);
+                const content = await fs.readFile(filepath, 'utf-8');
+                const records = JSON.parse(content);
+                history.push(...records);
+            }
+
+            return history;
+        } catch (error) {
+            Logger.error('读取历史记录失败', error);
+            return [];
+        }
+    }
+}
+
+export default FileStorage;

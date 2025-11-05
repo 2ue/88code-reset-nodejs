@@ -1,0 +1,44 @@
+{
+  "name": "88code-reset-nodejs",
+  "version": "1.0.0",
+  "description": "88code 自动重置工具 - Node.js 实现，智能额度最大化策略",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node src/index.js --mode=test",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop 88code-reset",
+    "pm2:restart": "pm2 restart 88code-reset",
+    "pm2:logs": "pm2 logs 88code-reset",
+    "docker:build": "docker build -t 88code-reset:latest .",
+    "docker:run": "docker-compose up -d",
+    "docker:stop": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "keywords": [
+    "88code",
+    "auto-reset",
+    "credits",
+    "automation",
+    "nodejs"
+  ],
+  "author": "Claude Code Assistant",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3",
+    "p-limit": "^5.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/88code-reset-nodejs"
+  }
+}

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  88code-reset:
+    container_name: 88code-reset
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: 88code-reset:latest
+    restart: unless-stopped
+
+    # 环境变量（从 .env 文件加载）
+    env_file:
+      - .env
+
+    # 也可以直接在这里覆盖环境变量
+    environment:
+      - NODE_ENV=production
+      - TZ=Asia/Shanghai
+
+    # 卷挂载（持久化日志和数据）
+    volumes:
+      # 日志目录（持久化）
+      - ./logs:/app/logs
+      # 数据目录（持久化）
+      - ./data:/app/data
+      # 如果需要动态修改配置，可以挂载 .env
+      # - ./.env:/app/.env:ro
+
+    # 资源限制（可选）
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'      # 最多使用 0.5 核 CPU
+          memory: 256M     # 最多使用 256MB 内存
+        reservations:
+          cpus: '0.1'      # 保留 0.1 核 CPU
+          memory: 128M     # 保留 128MB 内存
+
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"    # 单个日志文件最大 10MB
+        max-file: "3"      # 保留最近 3 个日志文件
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # 网络模式（使用桥接网络）
+    networks:
+      - 88code-network
+
+# 自定义网络
+networks:
+  88code-network:
+    driver: bridge

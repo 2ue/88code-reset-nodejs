@@ -1,0 +1,229 @@
+/**
+ * 时间工具类
+ * 处理时间相关的计算和格式化
+ */
+
+import { COOLDOWN_PERIOD, DELAYED_RESET_CONFIG } from '../constants.js';
+
+export class TimeUtils {
+    /**
+     * 检查冷却期是否已过
+     * @param {string} lastResetTimeStr - 上次重置时间字符串
+     * @returns {Object} { passed: boolean, remaining: number, formatted: string }
+     */
+    static checkCooldown(lastResetTimeStr) {
+        if (!lastResetTimeStr) {
+            return {
+                passed: true,
+                remaining: 0,
+                formatted: '无需等待',
+            };
+        }
+
+        try {
+            const lastResetTime = new Date(lastResetTimeStr).getTime();
+
+            if (isNaN(lastResetTime)) {
+                // 解析失败，假设已过冷却期
+                return {
+                    passed: true,
+                    remaining: 0,
+                    formatted: '无法解析时间',
+                };
+            }
+
+            const now = Date.now();
+            const elapsed = now - lastResetTime;
+
+            if (elapsed >= COOLDOWN_PERIOD) {
+                return {
+                    passed: true,
+                    remaining: 0,
+                    formatted: '已过冷却期',
+                };
+            }
+
+            const remaining = COOLDOWN_PERIOD - elapsed;
+
+            return {
+                passed: false,
+                remaining,
+                formatted: TimeUtils.formatDuration(remaining),
+            };
+
+        } catch (error) {
+            // 容错：假设已过冷却期
+            return {
+                passed: true,
+                remaining: 0,
+                formatted: '解析异常',
+            };
+        }
+    }
+
+    /**
+     * 格式化时间段（毫秒 -> 小时分钟秒）
+     * @param {number} ms - 毫秒数
+     * @returns {string} 格式化字符串
+     */
+    static formatDuration(ms) {
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+
+        if (hours > 0) {
+            const remainingMinutes = minutes % 60;
+            return `${hours}小时${remainingMinutes}分钟`;
+        } else if (minutes > 0) {
+            const remainingSeconds = seconds % 60;
+            return `${minutes}分钟${remainingSeconds}秒`;
+        } else {
+            return `${seconds}秒`;
+        }
+    }
+
+    /**
+     * 格式化日期时间
+     * @param {Date|number|string} dateInput - 日期输入
+     * @returns {string} 格式化字符串
+     */
+    static formatDateTime(dateInput) {
+        try {
+            const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+
+            if (isNaN(date.getTime())) {
+                return '无效日期';
+            }
+
+            return date.toLocaleString('zh-CN', {
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+            });
+        } catch (error) {
+            return '格式化失败';
+        }
+    }
+
+    /**
+     * 获取今天的日期字符串（YYYY-MM-DD）
+     * @returns {string}
+     */
+    static getTodayDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
+    /**
+     * 解析Cron时间字符串到小时和分钟
+     * @param {string} timeStr - 时间字符串（HH:MM）
+     * @returns {Object} { hour: number, minute: number }
+     */
+    static parseCronTime(timeStr) {
+        const [hourStr, minuteStr] = timeStr.split(':');
+        const hour = parseInt(hourStr);
+        const minute = parseInt(minuteStr);
+
+        if (isNaN(hour) || isNaN(minute)) {
+            throw new Error(`无效的时间格式: ${timeStr}`);
+        }
+
+        if (hour < 0 || hour > 23) {
+            throw new Error(`小时超出范围: ${hour}`);
+        }
+
+        if (minute < 0 || minute > 59) {
+            throw new Error(`分钟超出范围: ${minute}`);
+        }
+
+        return { hour, minute };
+    }
+
+    /**
+     * 生成Cron表达式
+     * @param {string} timeStr - 时间字符串（HH:MM）
+     * @returns {string} Cron表达式
+     */
+    static toCronExpression(timeStr) {
+        const { hour, minute } = TimeUtils.parseCronTime(timeStr);
+        return `${minute} ${hour} * * *`;
+    }
+
+    /**
+     * 计算距离下次执行的时间
+     * @param {string} timeStr - 时间字符串（HH:MM）
+     * @returns {number} 毫秒数
+     */
+    static getMillisUntilNext(timeStr) {
+        const { hour, minute } = TimeUtils.parseCronTime(timeStr);
+        const now = new Date();
+
+        const next = new Date();
+        next.setHours(hour, minute, 0, 0);
+
+        // 如果今天的时间已过，设置为明天
+        if (next.getTime() <= now.getTime()) {
+            next.setDate(next.getDate() + 1);
+        }
+
+        return next.getTime() - now.getTime();
+    }
+
+    /**
+     * 获取当天结束时间（23:59:49）
+     * 保留10秒缓冲时间，确保重置能在00:00前完成
+     * @returns {number} 当天23:59:49的时间戳（毫秒）
+     */
+    static getTodayEnd() {
+        const now = new Date();
+        const todayEnd = new Date(now);
+        todayEnd.setHours(23, 59, 59, 999); // 先设置到23:59:59.999
+
+        // 减去缓冲时间（10秒）
+        return todayEnd.getTime() - DELAYED_RESET_CONFIG.END_OF_DAY_BUFFER;
+    }
+
+    /**
+     * 检查某个时间戳是否在当天结束前
+     * @param {number} timestamp - 时间戳（毫秒）
+     * @returns {boolean} 是否在当天23:59:49前
+     */
+    static isBeforeTodayEnd(timestamp) {
+        const todayEnd = TimeUtils.getTodayEnd();
+        return timestamp <= todayEnd;
+    }
+
+    /**
+     * 计算冷却结束时间
+     * @param {string} lastResetTimeStr - 上次重置时间字符串
+     * @returns {number} 冷却结束时间戳（毫秒），如果无法解析返回0
+     */
+    static getCooldownEndTime(lastResetTimeStr) {
+        if (!lastResetTimeStr) {
+            return 0;
+        }
+
+        try {
+            const lastResetTime = new Date(lastResetTimeStr).getTime();
+
+            if (isNaN(lastResetTime)) {
+                return 0;
+            }
+
+            return lastResetTime + COOLDOWN_PERIOD;
+        } catch (error) {
+            return 0;
+        }
+    }
+}
+
+export default TimeUtils;

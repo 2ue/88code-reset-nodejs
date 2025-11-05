@@ -1,0 +1,128 @@
+# ==================== Dependencies ====================
+node_modules/
+package-lock.json
+yarn.lock
+# 保留 pnpm-lock.yaml 以确保版本一致性
+# pnpm-lock.yaml
+
+# pnpm
+.pnpm-store/
+.pnpm-debug.log
+
+# ==================== Environment Variables ====================
+# 敏感配置文件（包含API Key）
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# ==================== Logs ====================
+# 日志目录和文件
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==================== Data & Storage ====================
+# 运行时数据目录
+data/
+*.json
+!package.json
+!config/*.json
+!tsconfig.json
+
+# 历史记录
+history/
+*.db
+*.sqlite
+
+# ==================== OS Specific ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ==================== IDE & Editors ====================
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*.swn
+*~
+.vim/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ==================== PM2 ====================
+.pm2/
+pm2.log
+pm2-error.log
+ecosystem.config.js
+
+# ==================== Docker ====================
+# 不需要忽略 Docker 文件，应该提交到仓库
+# Dockerfile
+# docker-compose.yml
+# .dockerignore
+
+# Docker 运行时
+.docker/
+docker-volumes/
+
+# ==================== Build & Coverage ====================
+dist/
+build/
+coverage/
+.nyc_output/
+*.coverage
+
+# ==================== Temporary Files ====================
+*.tmp
+*.temp
+.cache/
+tmp/
+temp/
+
+# ==================== Test ====================
+.env.test
+
+# ==================== Misc ====================
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+
+# 调试文件
+debug.log
+error.log
