@@ -1,7 +1,7 @@
 {
   "name": "88code-reset-nodejs",
   "version": "0.0.1",
-  "description": "88code 自动重置工具 - Node.js 实现，智能额度最大化策略",
+  "description": "88code 自动重置工具 - Node.js 实现，智能额度最大化策略，每日理论上限300 credits",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
