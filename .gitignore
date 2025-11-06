@@ -61,6 +61,7 @@ Desktop.ini
 # VSCode
 .vscode/
 *.code-workspace
+.history/
 
 # JetBrains
 .idea/

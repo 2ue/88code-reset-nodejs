@@ -8,8 +8,8 @@ FROM node:18.20-alpine AS deps
 # 设置工作目录
 WORKDIR /app
 
-# 启用 corepack 并安装 pnpm 7.30.1（与本地保持一致）
-RUN corepack enable && corepack prepare pnpm@7.30.1 --activate
+# 启用 corepack 并安装 pnpm 9.15.0（与本地保持一致）
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 # 复制依赖文件
 COPY package.json pnpm-lock.yaml ./
