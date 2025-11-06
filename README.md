@@ -4,6 +4,13 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Hub-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/huby11111/88code-reset-nodejs)
+
+## 🚀 一键部署
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+[![Deploy to Fly.io](https://img.shields.io/badge/Deploy%20to-Fly.io-blueviolet?logo=fly.io)](https://fly.io/docs/hands-on/install-flyctl/)
 
 ---
 
@@ -23,44 +30,75 @@
 
 ## 📦 快速开始
 
-### 1. 安装依赖
+### 方式1: 使用 Docker 镜像（最简单）
 
 ```bash
-# 克隆或下载项目
+# 1. 拉取镜像
+docker pull huby11111/88code-reset-nodejs:latest
+
+# 2. 创建 .env 文件
+cat > .env << EOF
+API_KEYS=88_your_key_here,88_another_key_here
+API_BASE_URL=https://api.88code.com
+NODE_ENV=production
+TZ=Asia/Shanghai
+EOF
+
+# 3. 运行容器
+docker run -d \
+  --name 88code-reset \
+  --env-file .env \
+  --restart unless-stopped \
+  -v $(pwd)/logs:/app/logs \
+  huby11111/88code-reset-nodejs:latest
+
+# 4. 查看日志
+docker logs -f 88code-reset
+```
+
+### 方式2: 使用 Docker Compose
+
+```bash
+# 1. 下载配置文件
+wget https://raw.githubusercontent.com/yourusername/88code-reset-nodejs/main/docker-compose.yml
+
+# 2. 配置环境变量
+cp .env.example .env
+vim .env  # 填入你的 API_KEYS
+
+# 3. 启动服务
+docker-compose up -d
+
+# 4. 查看日志
+docker-compose logs -f
+```
+
+### 方式3: 源码运行
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/yourusername/88code-reset-nodejs.git
 cd 88code-reset-nodejs
 
-# 安装依赖（推荐使用 pnpm）
+# 2. 安装依赖（推荐使用 pnpm）
 pnpm install
-
 # 或使用 npm
 npm install
-```
 
-### 2. 配置API Key
-
-```bash
-# 复制环境变量模板
+# 3. 配置 API Key
 cp .env.example .env
+vim .env  # 填入你的 API_KEYS
 
-# 编辑.env文件，填入你的API Key
-# API_KEYS=88_your-api-key-here
-```
-
-### 3. 测试运行
-
-```bash
-# 测试API连接
+# 4. 测试运行
 pnpm run test
-```
 
-### 4. 正式运行
-
-```bash
-# 启动自动重置服务
+# 5. 启动服务
 pnpm start
 
-# 或使用 Docker（推荐生产环境）
-docker-compose up -d
+# 6. (可选) 使用 PM2 守护进程
+pnpm install -g pm2
+pnpm run pm2:start
+pm2 status
 ```
 
 ---
@@ -248,127 +286,101 @@ if (冷却结束时间 <= 23:59:50) {
 
 ## 🚀 部署方案
 
-### 方式1: 直接运行
+### 本地部署
 
+#### 1. Docker 镜像（推荐）
+
+**直接拉取已发布镜像**：
 ```bash
-pnpm start
-```
+# 从 Docker Hub 拉取
+docker pull huby11111/88code-reset-nodejs:latest
 
-### 方式2: PM2守护进程
-
-```bash
-# 安装PM2
-pnpm install -g pm2
-
-# 启动
-pnpm run pm2:start
-
-# 查看状态
-pm2 status
-
-# 查看日志
-pnpm run pm2:logs
-
-# 重启
-pnpm run pm2:restart
-
-# 停止
-pnpm run pm2:stop
-```
-
-### 方式3: Docker部署 ⭐ 推荐
-
-#### 快速开始
-
-```bash
-# 1. 确保已配置 .env 文件
-cp .env.example .env
-vim .env  # 填入你的 API_KEYS
-
-# 2. 使用 docker-compose 启动（推荐）
-docker-compose up -d
-
-# 3. 查看日志
-docker-compose logs -f
-
-# 4. 停止容器
-docker-compose down
-```
-
-#### 手动构建
-
-```bash
-# 构建镜像
-docker build -t 88code-reset:latest .
+# 或从 GitHub Container Registry 拉取
+docker pull ghcr.io/yourusername/88code-reset-nodejs:latest
 
 # 运行容器
 docker run -d \
   --name 88code-reset \
   --env-file .env \
-  -v $(pwd)/logs:/app/logs \
-  -v $(pwd)/data:/app/data \
   --restart unless-stopped \
-  88code-reset:latest
-
-# 查看日志
-docker logs -f 88code-reset
-
-# 停止容器
-docker stop 88code-reset
-docker rm 88code-reset
+  -v $(pwd)/logs:/app/logs \
+  huby11111/88code-reset-nodejs:latest
 ```
 
-#### Docker 常用命令
+#### 2. Docker Compose
 
 ```bash
-# 查看容器状态
-docker ps -a | grep 88code-reset
+# 1. 下载 docker-compose.yml
+wget https://raw.githubusercontent.com/yourusername/88code-reset-nodejs/main/docker-compose.yml
 
-# 进入容器
-docker exec -it 88code-reset sh
+# 2. 配置环境变量
+cp .env.example .env
+vim .env
 
-# 查看实时日志
-docker logs -f --tail 100 88code-reset
-
-# 重启容器
-docker restart 88code-reset
-
-# 查看资源使用
-docker stats 88code-reset
-
-# 更新镜像
-docker-compose down
-docker-compose build --no-cache
+# 3. 启动
 docker-compose up -d
 ```
 
-#### 镜像信息
+#### 3. 源码编译部署
 
-- **基础镜像**: `node:18.20-alpine`
-- **包管理器**: `pnpm 7.30.1`
-- **镜像大小**: ~100MB（多阶段构建优化）
-- **时区**: `Asia/Shanghai`
-
-#### 持久化数据
-
-容器会自动挂载以下目录到宿主机：
-```
-./logs  → /app/logs   # 日志文件
-./data  → /app/data   # 历史数据
-```
-
-#### 健康检查
-
-Docker 会自动监控容器健康状态：
 ```bash
-# 查看健康状态
-docker inspect --format='{{.State.Health.Status}}' 88code-reset
+# 1. 克隆项目
+git clone https://github.com/yourusername/88code-reset-nodejs.git
+cd 88code-reset-nodejs
+
+# 2. 安装依赖
+pnpm install
+
+# 3. 配置环境
+cp .env.example .env
+vim .env
+
+# 4. 启动服务
+# 方式A: 直接运行
+pnpm start
+
+# 方式B: PM2 守护进程（推荐生产环境）
+pnpm install -g pm2
+pnpm run pm2:start
+pm2 save
+pm2 startup
 ```
 
-状态说明：
-- `healthy`: 运行正常 ✅
-- `unhealthy`: 运行异常 ❌
-- `starting`: 启动中 ⏳
+### 云平台部署
+
+| 平台 | 免费额度 | 难度 | 推荐度 | 适合场景 |
+|------|---------|------|--------|---------|
+| [**Railway**](./deploy/railway.md) | $5/月 (500h) | ⭐ | ⭐⭐⭐⭐⭐ | 一键部署、零配置 |
+| [**Render**](./deploy/render.md) | 750h/月 | ⭐⭐ | ⭐⭐⭐⭐ | Blueprint自动化 |
+| [**Fly.io**](./deploy/fly.md) | 3 VM + 160GB | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 全球部署、高可用 |
+
+#### Railway（最简单）
+1. 点击上方 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new)
+2. 连接 GitHub 仓库
+3. 配置 `API_KEYS` 环境变量
+4. 点击 Deploy ✅
+
+#### Render（Blueprint 自动化）
+1. 点击上方 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+2. 自动读取 `render.yaml` 配置
+3. 配置 `API_KEYS` 密钥
+4. 一键部署 ✅
+
+#### Fly.io（全球加速）
+```bash
+# 1. 安装 CLI
+curl -L https://fly.io/install.sh | sh
+
+# 2. 登录
+flyctl auth login
+
+# 3. 部署
+flyctl launch
+flyctl secrets set API_KEYS=88_xxx,88_yyy
+flyctl deploy
+```
+
+> 📖 **详细文档**: [部署方案总览](./deploy/README.md)
 
 ---
 

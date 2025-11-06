@@ -2,8 +2,11 @@ version: '3.8'
 
 services:
   88code-reset:
-    container_name: 88code-reset
-    image: huby11111/88code-reset-nodejs:latest
+    container_name: 88code-reset-local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: 88code-reset-nodejs:local
     restart: unless-stopped
 
     # 环境变量（从 .env 文件加载）

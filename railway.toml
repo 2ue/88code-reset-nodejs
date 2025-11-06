@@ -1,0 +1,12 @@
+# Railway 配置文件
+# 文档: https://docs.railway.app/deploy/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# 注意：使用 Dockerfile 部署时，startCommand 会被 Dockerfile 的 CMD 覆盖
+# 实际启动命令在 Dockerfile line 56: CMD ["node", "src/index.js"]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
