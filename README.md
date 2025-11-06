@@ -6,11 +6,37 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Hub-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/huby11111/88code-reset-nodejs)
 
+## ⚠️ 免责声明
+
+**重要提示**：
+
+1. **依赖官方 API**：本工具依赖 88code 官方 API 接口（`https://api.88code.com`），所有重置操作均通过官方接口执行
+2. **源码审查**：重置接口的可靠性和安全性需要您自行审查源码验证，源码完全开放：[src/core/APIClient.js](./src/core/APIClient.js)
+3. **使用风险**：本人不对使用本工具导致的任何结果负责，包括但不限于：
+   - 额度重置失败
+   - 账号异常
+   - 数据丢失
+   - 其他不可预见的问题
+4. **自担责任**：使用本工具即表示您已阅读、理解并同意自行承担所有使用风险
+
+**建议**：
+- ✅ 使用前仔细阅读源码，特别是 API 调用部分
+- ✅ 先使用测试模式验证（`pnpm run test`）
+- ✅ 建议从小额度账号开始测试
+- ✅ 定期检查日志，确保运行正常
+
 ## 🚀 一键部署
+
+> **提示**：使用一键部署前，请先 [Fork 本仓库](https://github.com/2ue/88code-reset-nodejs/fork) 到您的 GitHub 账号
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 [![Deploy to Fly.io](https://img.shields.io/badge/Deploy%20to-Fly.io-blueviolet?logo=fly.io)](https://fly.io/docs/hands-on/install-flyctl/)
+
+**部署步骤**：
+1. 点击上方按钮，选择您 Fork 的仓库
+2. 配置环境变量（特别是 `API_KEYS`）
+3. 等待自动部署完成
 
 ---
 
@@ -74,7 +100,7 @@ docker logs -f 88code-reset
 
 ```bash
 # 1. 下载配置文件
-wget https://raw.githubusercontent.com/yourusername/88code-reset-nodejs/main/docker-compose.yml
+wget https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/docker-compose.yml
 
 # 2. 配置环境变量
 cp .env.example .env
@@ -91,7 +117,7 @@ docker-compose logs -f
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/yourusername/88code-reset-nodejs.git
+git clone https://github.com/2ue/88code-reset-nodejs.git
 cd 88code-reset-nodejs
 
 # 2. 安装依赖（推荐使用 pnpm）
@@ -368,7 +394,7 @@ if (冷却结束时间 <= 23:59:50) {
 docker pull huby11111/88code-reset-nodejs:latest
 
 # 或从 GitHub Container Registry 拉取
-docker pull ghcr.io/yourusername/88code-reset-nodejs:latest
+docker pull ghcr.io/2ue/88code-reset-nodejs:latest
 
 # 运行容器
 docker run -d \
@@ -383,7 +409,7 @@ docker run -d \
 
 ```bash
 # 1. 下载 docker-compose.yml
-wget https://raw.githubusercontent.com/yourusername/88code-reset-nodejs/main/docker-compose.yml
+wget https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/docker-compose.yml
 
 # 2. 配置环境变量
 cp .env.example .env
@@ -397,7 +423,7 @@ docker-compose up -d
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/yourusername/88code-reset-nodejs.git
+git clone https://github.com/2ue/88code-reset-nodejs.git
 cd 88code-reset-nodejs
 
 # 2. 安装依赖
@@ -427,26 +453,33 @@ pm2 startup
 | [**Fly.io**](./deploy/fly.md) | 3 VM + 160GB | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 全球部署、高可用 |
 
 #### Railway（最简单）
-1. 点击上方 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new)
-2. 连接 GitHub 仓库
-3. 配置 `API_KEYS` 环境变量
-4. 点击 Deploy ✅
+1. [Fork 本仓库](https://github.com/2ue/88code-reset-nodejs/fork)到您的 GitHub
+2. 点击上方 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new)
+3. 选择您 Fork 的仓库
+4. 配置 `API_KEYS` 环境变量
+5. 点击 Deploy ✅
 
 #### Render（Blueprint 自动化）
-1. 点击上方 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-2. 自动读取 `render.yaml` 配置
-3. 配置 `API_KEYS` 密钥
-4. 一键部署 ✅
+1. [Fork 本仓库](https://github.com/2ue/88code-reset-nodejs/fork)到您的 GitHub
+2. 点击上方 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+3. 选择您 Fork 的仓库
+4. 自动读取 `render.yaml` 配置
+5. 配置 `API_KEYS` 密钥
+6. 一键部署 ✅
 
 #### Fly.io（全球加速）
 ```bash
-# 1. 安装 CLI
+# 1. Fork 并克隆您的仓库
+git clone https://github.com/YOUR_USERNAME/88code-reset-nodejs.git
+cd 88code-reset-nodejs
+
+# 2. 安装 CLI
 curl -L https://fly.io/install.sh | sh
 
-# 2. 登录
+# 3. 登录
 flyctl auth login
 
-# 3. 部署
+# 4. 部署
 flyctl launch
 flyctl secrets set API_KEYS=88_xxx,88_yyy
 flyctl deploy
@@ -694,8 +727,8 @@ MIT License
 
 ## 📧 联系
 
-- Issue: [GitHub Issues](https://github.com/yourusername/88code-reset-nodejs/issues)
-- Email: your.email@example.com
+- Issue: [GitHub Issues](https://github.com/2ue/88code-reset-nodejs/issues)
+- Email: jie746635835@163.com
 
 ---
 

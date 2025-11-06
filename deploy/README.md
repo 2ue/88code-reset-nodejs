@@ -316,5 +316,5 @@ A:
 
 遇到问题？
 - 查看对应平台的详细文档
-- 提交 [GitHub Issue](https://github.com/yourusername/88code-reset-nodejs/issues)
+- 提交 [GitHub Issue](https://github.com/2ue/88code-reset-nodejs/issues)
 - 查看项目 [常见问题](../README.md#常见问题)

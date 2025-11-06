@@ -28,7 +28,7 @@
     "automation",
     "nodejs"
   ],
-  "author": "Claude Code Assistant",
+  "author": "2ue <jie746635835@163.com>",
   "license": "MIT",
   "engines": {
     "node": ">=16.0.0"
@@ -43,6 +43,6 @@
   "devDependencies": {},
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/88code-reset-nodejs"
+    "url": "https://github.com/2ue/88code-reset-nodejs"
   }
 }

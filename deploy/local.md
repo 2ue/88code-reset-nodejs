@@ -20,7 +20,7 @@
 docker pull huby11111/88code-reset-nodejs:latest
 
 # 或从 GitHub Container Registry 拉取
-docker pull ghcr.io/yourusername/88code-reset-nodejs:latest
+docker pull ghcr.io/2ue/88code-reset-nodejs:latest
 ```
 
 #### 2. 创建环境变量文件
@@ -91,10 +91,10 @@ docker rm -f 88code-reset
 
 ```bash
 # 下载 docker-compose.yml
-wget https://raw.githubusercontent.com/yourusername/88code-reset-nodejs/main/docker-compose.yml
+wget https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/docker-compose.yml
 
 # 或者克隆整个项目
-git clone https://github.com/yourusername/88code-reset-nodejs.git
+git clone https://github.com/2ue/88code-reset-nodejs.git
 cd 88code-reset-nodejs
 ```
 
@@ -167,7 +167,7 @@ npm install -g pnpm
 #### 1. 克隆项目
 
 ```bash
-git clone https://github.com/yourusername/88code-reset-nodejs.git
+git clone https://github.com/2ue/88code-reset-nodejs.git
 cd 88code-reset-nodejs
 ```
 
@@ -435,5 +435,5 @@ tar -xzf backup-20250106.tar.gz
 
 遇到问题？
 - 查看 [常见问题](../README.md#常见问题)
-- 提交 [GitHub Issue](https://github.com/yourusername/88code-reset-nodejs/issues)
-- 查看项目 [Wiki](https://github.com/yourusername/88code-reset-nodejs/wiki)
+- 提交 [GitHub Issue](https://github.com/2ue/88code-reset-nodejs/issues)
+- 查看项目 [Wiki](https://github.com/2ue/88code-reset-nodejs/wiki)
