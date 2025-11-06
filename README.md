@@ -55,6 +55,23 @@
 2. 配置环境变量（特别是 `API_KEYS`）
 3. 等待自动部署完成
 
+### 🌐 云平台部署对比
+
+| 平台 | 免费额度 | 持久化存储 | 难度 | 推荐度 | 特色功能 |
+|------|---------|-----------|------|--------|---------|
+| **[Railway](https://railway.app)** | $5/月 (500h) | ✅ 免费 | ⭐ | ⭐⭐⭐⭐⭐ | 一键部署、零配置 |
+| **[Render](https://render.com)** | 750h/月 | 💰 付费 | ⭐⭐ | ⭐⭐⭐⭐ | Blueprint自动化 |
+| **[Fly.io](https://fly.io)** | 3 VM + 160GB | ✅ 免费 | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 全球部署、高可用 |
+
+#### 📖 详细部署文档
+
+- **[完整部署指南](./deploy/README.md)** - 所有平台详细部署文档
+- **[Railway 部署](./deploy/railway.md)** - 最简单的云部署方式 ⭐推荐
+- **[Render 部署](./deploy/render.md)** - GitHub 集成，自动部署
+- **[Fly.io 部署](./deploy/fly.md)** - 全球分布式部署
+- **[Docker 部署](./deploy/docker.md)** - 本地容器化部署
+- **[本地部署](./deploy/local.md)** - Docker Compose、源码运行
+
 ---
 
 ## ✨ 核心特性
@@ -357,6 +374,8 @@ pm2 startup
 4. 配置 `API_KEYS` 环境变量
 5. 点击 Deploy ✅
 
+> **📖 Railway 详细文档**: [deploy/railway.md](./deploy/railway.md) | **官方网站**: [railway.app](https://railway.app) | **官方文档**: [docs.railway.app](https://docs.railway.app)
+
 #### Render（Blueprint 自动化）
 1. [Fork 本仓库](https://github.com/2ue/88code-reset-nodejs/fork)到您的 GitHub
 2. 点击上方 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
@@ -364,6 +383,8 @@ pm2 startup
 4. 自动读取 `render.yaml` 配置
 5. 配置 `API_KEYS` 密钥
 6. 一键部署 ✅
+
+> **📖 Render 详细文档**: [deploy/render.md](./deploy/render.md) | **官方网站**: [render.com](https://render.com) | **官方文档**: [render.com/docs](https://render.com/docs)
 
 #### Fly.io（全球加速）
 ```bash
@@ -382,6 +403,8 @@ flyctl launch
 flyctl secrets set API_KEYS=88_xxx,88_yyy
 flyctl deploy
 ```
+
+> **📖 Fly.io 详细文档**: [deploy/fly.md](./deploy/fly.md) | **官方网站**: [fly.io](https://fly.io) | **官方文档**: [fly.io/docs](https://fly.io/docs)
 
 > 📖 **详细文档**: [部署方案总览](./deploy/README.md)
 

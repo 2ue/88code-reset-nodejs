@@ -1,5 +1,7 @@
 # Fly.io 部署指南
 
+> **官方网站**: [fly.io](https://fly.io) | **官方文档**: [fly.io/docs](https://fly.io/docs) | **CLI 文档**: [fly.io/docs/flyctl](https://fly.io/docs/flyctl) | **定价**: [fly.io/docs/about/pricing](https://fly.io/docs/about/pricing)
+
 Fly.io 提供全球分布式部署，支持多区域和持久化卷存储。
 
 ---

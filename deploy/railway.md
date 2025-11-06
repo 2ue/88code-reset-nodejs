@@ -1,5 +1,7 @@
 # Railway 部署指南
 
+> **官方网站**: [railway.app](https://railway.app) | **官方文档**: [docs.railway.app](https://docs.railway.app) | **CLI 文档**: [docs.railway.app/develop/cli](https://docs.railway.app/develop/cli)
+
 Railway 是最简单的部署方式，支持自动检测 Dockerfile，一键部署。
 
 ---
@@ -18,7 +20,7 @@ Railway 是最简单的部署方式，支持自动检测 Dockerfile，一键部�
 
 ### 1. 注册账号
 
-访问 https://railway.app 注册账号
+访问 [railway.app](https://railway.app) 注册账号
 
 ### 2. 创建新项目
 

@@ -1,5 +1,7 @@
 # Render 部署指南
 
+> **官方网站**: [render.com](https://render.com) | **官方文档**: [render.com/docs](https://render.com/docs) | **Blueprint 文档**: [render.com/docs/blueprint-spec](https://render.com/docs/blueprint-spec)
+
 Render 提供 750小时/月免费额度，支持 Blueprint 配置文件自动化部署。
 
 ---
@@ -22,7 +24,7 @@ Render 提供 750小时/月免费额度，支持 Blueprint 配置文件自动化
 
 #### 1. 注册账号
 
-访问 https://render.com 注册账号
+访问 [render.com](https://render.com) 注册账号
 
 #### 2. 使用 Blueprint
 
