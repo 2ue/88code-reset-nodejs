@@ -28,8 +28,9 @@ class ExecutionLock {
 }
 
 export class Scheduler {
-    constructor(resetService) {
+    constructor(resetService, fileStorage = null) {
         this.resetService = resetService;
+        this.fileStorage = fileStorage;
         this.lock = new ExecutionLock();
         this.jobs = [];
     }
@@ -39,6 +40,12 @@ export class Scheduler {
 
         // 初始化 ResetService（包含通知模块）
         await this.resetService.initialize();
+
+        // 启动时清理一次旧历史文件
+        if (this.fileStorage) {
+            Logger.info('清理旧历史文件...');
+            await this.fileStorage.cleanOldHistory();
+        }
 
         // 第一次重置检查任务
         const firstCron = TimeUtils.toCronExpression(config.firstResetTime);
@@ -55,6 +62,16 @@ export class Scheduler {
         }, { timezone: config.timezone });
 
         this.jobs.push({ name: 'second-reset', job: secondJob });
+
+        // 每天凌晨00:00执行历史文件清理
+        if (this.fileStorage) {
+            const cleanupJob = cron.schedule('0 0 * * *', async () => {
+                Logger.info('开始定期清理旧历史文件...');
+                await this.fileStorage.cleanOldHistory();
+            }, { timezone: config.timezone });
+
+            this.jobs.push({ name: 'cleanup', job: cleanupJob });
+        }
 
         // 计算下次执行时间
         const nextFirst = TimeUtils.getMillisUntilNext(config.firstResetTime);

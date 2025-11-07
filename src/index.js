@@ -7,6 +7,7 @@ import Logger from './utils/Logger.js';
 import APIClient from './core/APIClient.js';
 import ResetService from './core/ResetService.js';
 import Scheduler from './core/Scheduler.js';
+import FileStorage from './storage/FileStorage.js';
 import config from './config.js';
 
 let scheduler;
@@ -50,11 +51,19 @@ async function main() {
 
         // 初始化服务
         Logger.info('初始化服务...');
+        const fileStorage = new FileStorage();
         const apiClients = config.apiKeys.map(apiKey => new APIClient(apiKey));
         const resetServices = apiClients.map(client => new ResetService(client));
 
         // 如果有多个账号，串行处理
         const resetService = {
+            // 初始化所有服务
+            async initialize() {
+                for (const service of resetServices) {
+                    await service.initialize();
+                }
+            },
+
             async executeReset(resetType) {
                 const results = [];
                 for (const service of resetServices) {
@@ -62,11 +71,21 @@ async function main() {
                     results.push(result);
                 }
                 return results;
+            },
+
+            // 清理所有延迟定时器
+            clearDelayedTimers() {
+                for (const service of resetServices) {
+                    service.clearDelayedTimers();
+                }
             }
         };
 
+        // 保存引用以便清理
+        resetServiceWrapper = resetService;
+
         // 启动调度器
-        scheduler = new Scheduler(resetService);
+        scheduler = new Scheduler(resetService, fileStorage);
         await scheduler.start();
 
         Logger.success('服务启动成功！');
@@ -104,11 +123,18 @@ async function runTest() {
 }
 
 // 优雅关闭
+let resetServiceWrapper = null; // 保存resetService引用
+
 process.on('SIGTERM', async () => {
     Logger.info('收到SIGTERM信号，开始优雅关闭...');
 
     if (scheduler) {
         scheduler.stop();
+    }
+
+    // 清理所有延迟定时器
+    if (resetServiceWrapper) {
+        resetServiceWrapper.clearDelayedTimers();
     }
 
     await Logger.end();
@@ -120,6 +146,11 @@ process.on('SIGINT', async () => {
 
     if (scheduler) {
         scheduler.stop();
+    }
+
+    // 清理所有延迟定时器
+    if (resetServiceWrapper) {
+        resetServiceWrapper.clearDelayedTimers();
     }
 
     await Logger.end();

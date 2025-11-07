@@ -1,0 +1,376 @@
+
+> 88code-reset-nodejs@0.0.3 test
+> cp .env.test .env && node tests/run-all.js
+
+🧪 88code Reset Service - 测试套件
+
+运行测试文件：
+  - ./tests/unit/ResetService.test.js
+  - ./tests/unit/TimeUtils.test.js
+  - ./tests/unit/DynamicTimerManager.test.js
+  - ./tests/integration/reset-flow.test.js
+
+TAP version 13
+# ✅ 检查点时间验证通过: 18:55 -> 23:58 (间隔 303分钟 / 5小时3分钟)
+# ✅ Integration tests defined
+# Subtest: 集成测试 - FIRST Checkpoint 完整流程
+    # Subtest: 应该完成完整的 FIRST checkpoint 重置流程
+    ok 1 - 应该完成完整的 FIRST checkpoint 重置流程
+      ---
+      duration_ms: 310.388
+      ...
+    # Subtest: 应该正确过滤 cooldown 未过的订阅（FIRST）
+    ok 2 - 应该正确过滤 cooldown 未过的订阅（FIRST）
+      ---
+      duration_ms: 103.197158
+      ...
+    1..2
+ok 1 - 集成测试 - FIRST Checkpoint 完整流程
+  ---
+  duration_ms: 416.776885
+  type: 'suite'
+  ...
+# Subtest: 集成测试 - SECOND Checkpoint 完整流程
+    # Subtest: 应该完成完整的 SECOND checkpoint 重置流程
+    ok 1 - 应该完成完整的 SECOND checkpoint 重置流程
+      ---
+      duration_ms: 508.911006
+      ...
+    # Subtest: 应该调度延迟重置当 cooldown 未过（SECOND）
+    ok 2 - 应该调度延迟重置当 cooldown 未过（SECOND）
+      ---
+      duration_ms: 229.05545
+      ...
+# [2025-11-07 23:04:05] [[31MERROR[39M] [订阅fail-1] 重置失败 Simulated API failure {"stack":"Error: Simulated API failure\\n    at apiClient.resetCredits (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/integration/reset-flow.test.js:241:15)\\n    at ResetService.processSubscription (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/src/core/ResetService.js:332:34)\\n    at ResetService.executeReset (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/src/core/ResetService.js:94:47)\\n    at async TestContext.<anonymous> (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/integration/reset-flow.test.js:246:20)\\n    at async Test.run (node:internal/test_runner/test:632:9)\\n    at async Promise.all (index 0)\\n    at async Suite.run (node:internal/test_runner/test:948:7)\\n    at async Test.processPendingSubtests (node:internal/test_runner/test:374:7)"}
+    # Subtest: 应该处理混合场景：立即重置 + 延迟重置 + 跳过
+    ok 3 - 应该处理混合场景：立即重置 + 延迟重置 + 跳过
+      ---
+      duration_ms: 505.055274
+      ...
+    1..3
+ok 2 - 集成测试 - SECOND Checkpoint 完整流程
+  ---
+  duration_ms: 1243.801632
+  type: 'suite'
+  ...
+# [2025-11-07 23:04:06] [[31MERROR[39M] 重置过程发生错误 Network error {"stack":"Error: Network error\\n    at TestContext.<anonymous> (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/integration/reset-flow.test.js:266:43)\\n    at Test.runInAsyncScope (node:async_hooks:203:9)\\n    at Test.run (node:internal/test_runner/test:631:25)\\n    at Suite.processPendingSubtests (node:internal/test_runner/test:374:18)\\n    at Test.postRun (node:internal/test_runner/test:715:19)\\n    at Test.run (node:internal/test_runner/test:673:12)\\n    at async Promise.all (index 0)\\n    at async Suite.run (node:internal/test_runner/test:948:7)\\n    at async Test.processPendingSubtests (node:internal/test_runner/test:374:7)"}
+# Subtest: 集成测试 - 错误处理
+    # Subtest: 应该处理 API 失败并继续处理其他订阅
+    ok 1 - 应该处理 API 失败并继续处理其他订阅
+      ---
+      duration_ms: 204.162846
+      ...
+    # Subtest: 应该处理 getSubscriptions 失败
+    ok 2 - 应该处理 getSubscriptions 失败
+      ---
+      duration_ms: 1.188941
+      ...
+    1..2
+ok 3 - 集成测试 - 错误处理
+  ---
+  duration_ms: 206.033461
+  type: 'suite'
+  ...
+# Subtest: 集成测试 - 状态验证
+    # Subtest: 应该验证重置后的订阅状态
+    ok 1 - 应该验证重置后的订阅状态
+      ---
+      duration_ms: 102.668666
+      ...
+    # Subtest: 应该记录执行时间和持续时间
+    ok 2 - 应该记录执行时间和持续时间
+      ---
+      duration_ms: 102.452787
+      ...
+    1..2
+ok 4 - 集成测试 - 状态验证
+  ---
+  duration_ms: 205.772507
+  type: 'suite'
+  ...
+# Subtest: 集成测试 - 通知系统
+    # Subtest: 应该发送通知给 NotifierManager
+    ok 1 - 应该发送通知给 NotifierManager
+      ---
+      duration_ms: 102.344531
+      ...
+# [2025-11-07 23:04:06] [[31MERROR[39M] 重置过程发生错误 Notification failed {"stack":"Error: Notification failed\\n    at NotifierManagerMock.notify (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/mocks/StorageMock.js:103:13)\\n    at ResetService.executeReset (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/src/core/ResetService.js:124:40)\\n    at async file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/integration/reset-flow.test.js:365:7\\n    at async waitForActual (node:assert:791:5)\\n    at async Function.doesNotReject (node:assert:932:33)\\n    at async TestContext.<anonymous> (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/integration/reset-flow.test.js:364:5)\\n    at async Test.run (node:internal/test_runner/test:632:9)\\n    at async Suite.processPendingSubtests (node:internal/test_runner/test:374:7)"}
+    # Subtest: 应该处理通知发送失败
+    ok 2 - 应该处理通知发送失败
+      ---
+      duration_ms: 102.699335
+      ...
+    1..2
+ok 5 - 集成测试 - 通知系统
+  ---
+  duration_ms: 205.885663
+  type: 'suite'
+  ...
+# ✅ 检查点时间验证通过: 18:55 -> 23:58 (间隔 303分钟 / 5小时3分钟)
+# ✅ DynamicTimerManager tests defined
+# Subtest: DynamicTimerManager - 基础操作
+    # Subtest: 应该设置定时器
+    ok 1 - 应该设置定时器
+      ---
+      duration_ms: 5.58047
+      ...
+    # Subtest: 应该清除指定定时器
+    ok 2 - 应该清除指定定时器
+      ---
+      duration_ms: 0.483094
+      ...
+    # Subtest: 应该允许清除不存在的定时器（无错误）
+    ok 3 - 应该允许清除不存在的定时器（无错误）
+      ---
+      duration_ms: 0.345101
+      ...
+    # Subtest: 应该返回正确的定时器数量
+    ok 4 - 应该返回正确的定时器数量
+      ---
+      duration_ms: 0.949582
+      ...
+    1..4
+ok 6 - DynamicTimerManager - 基础操作
+  ---
+  duration_ms: 9.930057
+  type: 'suite'
+  ...
+# Subtest: DynamicTimerManager - 同名定时器覆盖
+    # Subtest: 应该自动清除旧的同名定时器
+    ok 1 - 应该自动清除旧的同名定时器
+      ---
+      duration_ms: 0.568183
+      ...
+    # Subtest: 应该防止定时器泄漏
+    ok 2 - 应该防止定时器泄漏
+      ---
+      duration_ms: 1.269628
+      ...
+    1..2
+ok 7 - DynamicTimerManager - 同名定时器覆盖
+  ---
+  duration_ms: 2.229063
+  type: 'suite'
+  ...
+# Subtest: DynamicTimerManager - 批量清除
+    # Subtest: 应该清除所有定时器
+    ok 1 - 应该清除所有定时器
+      ---
+      duration_ms: 0.723979
+      ...
+    # Subtest: 应该允许多次调用 clearAll
+    ok 2 - 应该允许多次调用 clearAll
+      ---
+      duration_ms: 0.459263
+      ...
+    1..2
+ok 8 - DynamicTimerManager - 批量清除
+  ---
+  duration_ms: 1.486369
+  type: 'suite'
+  ...
+# Subtest: DynamicTimerManager - 定时器执行验证
+    # Subtest: 应该允许定时器正常执行
+    ok 1 - 应该允许定时器正常执行
+      ---
+      duration_ms: 100.976404
+      ...
+    # Subtest: 清除定时器应该阻止其执行
+    ok 2 - 清除定时器应该阻止其执行
+      ---
+      duration_ms: 100.10456
+      ...
+    # Subtest: 应该正确处理多个定时器的执行
+    ok 3 - 应该正确处理多个定时器的执行
+      ---
+      duration_ms: 122.369804
+      ...
+    1..3
+ok 9 - DynamicTimerManager - 定时器执行验证
+  ---
+  duration_ms: 324.187496
+  type: 'suite'
+  ...
+# Subtest: DynamicTimerManager - 边界情况
+    # Subtest: 应该处理立即执行的定时器（delay=0）
+    ok 1 - 应该处理立即执行的定时器（delay=0）
+      ---
+      duration_ms: 11.492724
+      ...
+    # Subtest: 应该支持多次设置和清除同一个名称
+    ok 2 - 应该支持多次设置和清除同一个名称
+      ---
+      duration_ms: 2.895396
+      ...
+    # Subtest: 应该支持不同命名空间的定时器
+    ok 3 - 应该支持不同命名空间的定时器
+      ---
+      duration_ms: 0.460126
+      ...
+    1..3
+ok 10 - DynamicTimerManager - 边界情况
+  ---
+  duration_ms: 15.550939
+  type: 'suite'
+  ...
+# ✅ 检查点时间验证通过: 18:55 -> 23:58 (间隔 303分钟 / 5小时3分钟)
+# ✅ ResetService tests defined
+# Subtest: ResetService - P0 PAYGO 保护
+    # Subtest: 应该跳过 PAYGO 订阅（最高优先级）
+    ok 1 - 应该跳过 PAYGO 订阅（最高优先级）
+      ---
+      duration_ms: 106.694139
+      ...
+    # Subtest: 应该识别各种 PAYGO 变体
+    ok 2 - 应该识别各种 PAYGO 变体
+      ---
+      duration_ms: 0.807073
+      ...
+    1..2
+ok 11 - ResetService - P0 PAYGO 保护
+  ---
+  duration_ms: 109.913689
+  type: 'suite'
+  ...
+# Subtest: ResetService - P1 类型和状态过滤
+    # Subtest: 应该只处理 MONTHLY 类型订阅
+    ok 1 - 应该只处理 MONTHLY 类型订阅
+      ---
+      duration_ms: 102.286859
+      ...
+    # Subtest: 应该跳过 inactive 订阅
+    ok 2 - 应该跳过 inactive 订阅
+      ---
+      duration_ms: 102.822872
+      ...
+    1..2
+ok 12 - ResetService - P1 类型和状态过滤
+  ---
+  duration_ms: 205.657995
+  type: 'suite'
+  ...
+# Subtest: ResetService - P2 Cooldown 逻辑
+    # Subtest: FIRST checkpoint: 应该跳过 cooldown 未过的订阅
+    ok 1 - FIRST checkpoint: 应该跳过 cooldown 未过的订阅
+      ---
+      duration_ms: 0.890344
+      ...
+    # Subtest: SECOND checkpoint: 应该调度延迟重置当 cooldown 未过
+    ok 2 - SECOND checkpoint: 应该调度延迟重置当 cooldown 未过
+      ---
+      duration_ms: 25.051978
+      ...
+    # Subtest: SECOND checkpoint: 应该立即重置当 cooldown 已过
+    ok 3 - SECOND checkpoint: 应该立即重置当 cooldown 已过
+      ---
+      duration_ms: 101.308175
+      ...
+    1..3
+ok 13 - ResetService - P2 Cooldown 逻辑
+  ---
+  duration_ms: 128.233066
+  type: 'suite'
+  ...
+# Subtest: ResetService - P3 resetTimes 策略
+    # Subtest: FIRST checkpoint: 只重置 resetTimes >= 2 的订阅
+    not ok 1 - FIRST checkpoint: 只重置 resetTimes >= 2 的订阅
+      ---
+      duration_ms: 707.491254
+      location: 'file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/unit/ResetService.test.js:192:3'
+      failureType: 'testCodeFailure'
+      error: 'resetTimes >= 2 should be eligible'
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 3
+      actual: 4
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/unit/ResetService.test.js:205:12)
+        async Test.run (node:internal/test_runner/test:632:9)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:948:7)
+        async Test.processPendingSubtests (node:internal/test_runner/test:374:7)
+      ...
+    # Subtest: SECOND checkpoint: 重置 resetTimes >= 1 的订阅
+    ok 2 - SECOND checkpoint: 重置 resetTimes >= 1 的订阅
+      ---
+      duration_ms: 505.484675
+      ...
+    # Subtest: 应该正确处理 resetTimes 边界情况
+    ok 3 - 应该正确处理 resetTimes 边界情况
+      ---
+      duration_ms: 1.073309
+      ...
+    1..3
+not ok 14 - ResetService - P3 resetTimes 策略
+  ---
+  duration_ms: 1215.012884
+  type: 'suite'
+  location: 'file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/unit/ResetService.test.js:191:1'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# [2025-11-07 23:04:06] [[31MERROR[39M] [订阅sub-ideal-001] 重置失败 Internal Server Error {"stack":"Error: Internal Server Error\\n    at createAPIError (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/mocks/APIClientMock.js:143:17)\\n    at file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/mocks/APIClientMock.js:159:17\\n    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)\\n    at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)\\n    at async loadESM (node:internal/process/esm_loader:34:7)\\n    at async handleMainPromise (node:internal/modules/run_main:106:12)"}
+# Subtest: ResetService - 重置执行
+    # Subtest: 应该成功重置符合条件的订阅
+    ok 1 - 应该成功重置符合条件的订阅
+      ---
+      duration_ms: 102.044803
+      ...
+    # Subtest: 应该处理 API 失败情况
+    ok 2 - 应该处理 API 失败情况
+      ---
+      duration_ms: 3.578013
+      ...
+    # Subtest: 应该串行处理多个订阅
+    ok 3 - 应该串行处理多个订阅
+      ---
+      duration_ms: 502.787183
+      ...
+    1..3
+ok 15 - ResetService - 重置执行
+  ---
+  duration_ms: 609.102999
+  type: 'suite'
+  ...
+# Subtest: ResetService - 结果统计
+    # Subtest: 应该正确统计各种状态
+    ok 1 - 应该正确统计各种状态
+      ---
+      duration_ms: 305.115645
+      ...
+# [2025-11-07 23:04:06] [[31MERROR[39M] 重置过程发生错误 Internal Server Error {"stack":"Error: Internal Server Error\\n    at createAPIError (file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/mocks/APIClientMock.js:143:17)\\n    at file:///Users/yuanfeijie/Desktop/project/88code-reset-nodejs/tests/mocks/APIClientMock.js:159:17\\n    at ModuleJob.run (node:internal/modules/esm/module_job:195:25)\\n    at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)\\n    at async loadESM (node:internal/process/esm_loader:34:7)\\n    at async handleMainPromise (node:internal/modules/run_main:106:12)"}
+    # Subtest: 应该记录执行时间
+    ok 2 - 应该记录执行时间
+      ---
+      duration_ms: 101.910306
+      ...
+    1..2
+ok 16 - ResetService - 结果统计
+  ---
+  duration_ms: 407.727173
+  type: 'suite'
+  ...
+# Subtest: ResetService - 边界情况
+    # Subtest: 应该处理空订阅列表
+    ok 1 - 应该处理空订阅列表
+      ---
+      duration_ms: 0.494056
+      ...
+    # Subtest: 应该处理所有订阅都不符合条件的情况
+    ok 2 - 应该处理所有订阅都不符合条件的情况
+      ---
+      duration_ms: 0.556683
+      ...
+    # Subtest: 应该处理 getSubscriptions API 失败
+    ok 3 - 应该处理 getSubscriptions API 失败
+      ---
+      duration_ms: 0.854673
+      ...
+    1..3
+ok 17 - ResetService - 边界情况
+  ---
+  duration_ms: 2.342151
+  type: 'suite'
+  ...

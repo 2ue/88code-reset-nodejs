@@ -227,11 +227,58 @@ export class ResetService {
             Logger.info(`[订阅${subId}] 开始执行延迟重置`);
 
             try {
-                await this.processSubscription(subscription, resetType);
+                // 重新获取最新的订阅信息（避免使用过期数据）
+                const latestSubscriptions = await this.apiClient.getSubscriptions();
+                const latestSubscription = latestSubscriptions.find(s => s.id === subId);
+
+                if (!latestSubscription) {
+                    Logger.error(`[订阅${subId}] 订阅不存在，取消延迟重置`);
+                    this.timerManager.clear(`delayed-reset-${subId}`);
+                    return;
+                }
+
+                // 使用最新数据执行重置
+                const result = await this.processSubscription(latestSubscription, resetType);
                 this.timerManager.clear(`delayed-reset-${subId}`);
+
+                // 发送延迟重置结果通知
+                await this.notifierManager.notify({
+                    resetType: `${resetType}_DELAYED`,
+                    startTime: Date.now(),
+                    endTime: Date.now(),
+                    totalDuration: 0,
+                    totalSubscriptions: 1,
+                    eligible: 1,
+                    success: result.status === RESET_STATUS.SUCCESS ? 1 : 0,
+                    failed: result.status === RESET_STATUS.FAILED ? 1 : 0,
+                    skipped: 0,
+                    scheduled: 0,
+                    details: [result],
+                });
             } catch (error) {
                 Logger.error(`[订阅${subId}] 延迟重置失败`, error);
                 this.timerManager.clear(`delayed-reset-${subId}`);
+
+                // 发送失败通知
+                await this.notifierManager.notify({
+                    resetType: `${resetType}_DELAYED`,
+                    startTime: Date.now(),
+                    endTime: Date.now(),
+                    totalDuration: 0,
+                    totalSubscriptions: 1,
+                    eligible: 1,
+                    success: 0,
+                    failed: 1,
+                    skipped: 0,
+                    scheduled: 0,
+                    details: [{
+                        subscriptionId: subId,
+                        subscriptionName: subscription.subscriptionPlanName,
+                        status: RESET_STATUS.FAILED,
+                        message: error.message,
+                        error: error.message,
+                    }],
+                });
             }
         }, delayMs);
 
