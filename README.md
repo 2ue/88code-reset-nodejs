@@ -5,7 +5,6 @@
 ## 📑 目录
 
 - [⚠️ 免责声明](#️-免责声明)
-- [🚀 一键部署](#-一键部署)
 - [✨ 核心特性](#-核心特性)
 - [💡 额度说明](#-额度说明)
 - [📦 快速开始](#-快速开始)
@@ -41,36 +40,6 @@
 - ✅ 先使用测试模式验证（`pnpm run test`）
 - ✅ 建议从小额度账号开始测试
 - ✅ 定期检查日志，确保运行正常
-
-## 🚀 一键部署
-
-> **提示**：使用一键部署前，请先 [Fork 本仓库](https://github.com/2ue/88code-reset-nodejs/fork) 到您的 GitHub 账号
-
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-[![Deploy to Fly.io](https://img.shields.io/badge/Deploy%20to-Fly.io-blueviolet?logo=fly.io)](https://fly.io/docs/hands-on/install-flyctl/)
-
-**部署步骤**：
-1. 点击上方按钮，选择您 Fork 的仓库
-2. 配置环境变量（特别是 `API_KEYS`）
-3. 等待自动部署完成
-
-### 🌐 云平台部署对比
-
-| 平台 | 免费额度 | 持久化存储 | 难度 | 推荐度 | 特色功能 |
-|------|---------|-----------|------|--------|---------|
-| **[Railway](https://railway.app)** | $5/月 (500h) | ✅ 免费 | ⭐ | ⭐⭐⭐⭐⭐ | 一键部署、零配置 |
-| **[Render](https://render.com)** | 750h/月 | 💰 付费 | ⭐⭐ | ⭐⭐⭐⭐ | Blueprint自动化 |
-| **[Fly.io](https://fly.io)** | 3 VM + 160GB | ✅ 免费 | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 全球部署、高可用 |
-
-#### 📖 详细部署文档
-
-- **[完整部署指南](./deploy/README.md)** - 所有平台详细部署文档
-- **[Railway 部署](./deploy/railway.md)** - 最简单的云部署方式 ⭐推荐
-- **[Render 部署](./deploy/render.md)** - GitHub 集成，自动部署
-- **[Fly.io 部署](./deploy/fly.md)** - 全球分布式部署
-- **[Docker 部署](./deploy/docker.md)** - 本地容器化部署
-- **[本地部署](./deploy/local.md)** - Docker Compose、源码运行
 
 ---
 
@@ -299,42 +268,58 @@ if (冷却结束时间 <= 23:59:50) {
 
 ## 🚀 部署方案
 
-### 本地部署
+### 推荐部署方式
 
-#### 1. Docker 镜像（推荐）
+#### 方式 1: Docker 部署（⭐ 推荐）
 
-**直接拉取已发布镜像**：
+**优势**: 一键启动、环境隔离、易于管理
+
 ```bash
-# 从 Docker Hub 拉取
+# 1. 拉取镜像
 docker pull huby11111/88code-reset-nodejs:latest
 
-# 或从 GitHub Container Registry 拉取
-docker pull ghcr.io/2ue/88code-reset-nodejs:latest
+# 2. 配置环境变量
+cat > .env << EOF
+API_KEYS=88_your_key_here
+FIRST_RESET_TIME=18:55
+SECOND_RESET_TIME=23:58
+TIMEZONE=Asia/Shanghai
+EOF
 
-# 运行容器
+# 3. 运行容器
 docker run -d \
   --name 88code-reset \
   --env-file .env \
   --restart unless-stopped \
   -v $(pwd)/logs:/app/logs \
   huby11111/88code-reset-nodejs:latest
+
+# 4. 查看日志
+docker logs -f 88code-reset
 ```
 
-#### 2. Docker Compose
+#### 方式 2: Docker Compose
+
+**优势**: 配置管理更方便、支持多容器
 
 ```bash
-# 1. 下载 docker-compose.yml
+# 1. 下载配置文件
 wget https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/docker-compose.yml
 
 # 2. 配置环境变量
 cp .env.example .env
-vim .env
+vim .env  # 填入你的 API_KEYS
 
-# 3. 启动
+# 3. 启动服务
 docker-compose up -d
+
+# 4. 查看日志
+docker-compose logs -f
 ```
 
-#### 3. 源码编译部署
+#### 方式 3: 本地源码运行
+
+**优势**: 开发调试方便、配置灵活
 
 ```bash
 # 1. 克隆项目
@@ -346,67 +331,22 @@ pnpm install
 
 # 3. 配置环境
 cp .env.example .env
-vim .env
+vim .env  # 填入你的 API_KEYS
 
-# 4. 启动服务
-# 方式A: 直接运行
-pnpm start
-
-# 方式B: PM2 守护进程（推荐生产环境）
-pnpm install -g pm2
-pnpm run pm2:start
-pm2 save
-pm2 startup
+# 4. 启动服务（选择一种）
+pnpm start                # 直接运行
+pnpm run pm2:start        # PM2 守护进程（推荐生产环境）
 ```
 
 ### 云平台部署
 
-| 平台 | 免费额度 | 难度 | 推荐度 | 适合场景 |
-|------|---------|------|--------|---------|
-| [**Railway**](./deploy/railway.md) | $5/月 (500h) | ⭐ | ⭐⭐⭐⭐⭐ | 一键部署、零配置 |
-| [**Render**](./deploy/render.md) | 750h/月 | ⭐⭐ | ⭐⭐⭐⭐ | Blueprint自动化 |
-| [**Fly.io**](./deploy/fly.md) | 3 VM + 160GB | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | 全球部署、高可用 |
+如需云端部署，支持以下平台（详细文档见 [deploy/](./deploy/)）：
 
-#### Railway（最简单）
-1. [Fork 本仓库](https://github.com/2ue/88code-reset-nodejs/fork)到您的 GitHub
-2. 点击上方 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/new)
-3. 选择您 Fork 的仓库
-4. 配置 `API_KEYS` 环境变量
-5. 点击 Deploy ✅
+- **Railway** - 一键部署，适合快速上线
+- **Render** - GitHub 集成，自动部署
+- **Fly.io** - 全球分布式，高可用
 
-> **📖 Railway 详细文档**: [deploy/railway.md](./deploy/railway.md) | **官方网站**: [railway.app](https://railway.app) | **官方文档**: [docs.railway.app](https://docs.railway.app)
-
-#### Render（Blueprint 自动化）
-1. [Fork 本仓库](https://github.com/2ue/88code-reset-nodejs/fork)到您的 GitHub
-2. 点击上方 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-3. 选择您 Fork 的仓库
-4. 自动读取 `render.yaml` 配置
-5. 配置 `API_KEYS` 密钥
-6. 一键部署 ✅
-
-> **📖 Render 详细文档**: [deploy/render.md](./deploy/render.md) | **官方网站**: [render.com](https://render.com) | **官方文档**: [render.com/docs](https://render.com/docs)
-
-#### Fly.io（全球加速）
-```bash
-# 1. Fork 并克隆您的仓库
-git clone https://github.com/YOUR_USERNAME/88code-reset-nodejs.git
-cd 88code-reset-nodejs
-
-# 2. 安装 CLI
-curl -L https://fly.io/install.sh | sh
-
-# 3. 登录
-flyctl auth login
-
-# 4. 部署
-flyctl launch
-flyctl secrets set API_KEYS=88_xxx,88_yyy
-flyctl deploy
-```
-
-> **📖 Fly.io 详细文档**: [deploy/fly.md](./deploy/fly.md) | **官方网站**: [fly.io](https://fly.io) | **官方文档**: [fly.io/docs](https://fly.io/docs)
-
-> 📖 **详细文档**: [部署方案总览](./deploy/README.md)
+> 📖 **完整部署文档**: [deploy/README.md](./deploy/README.md)
 
 ---
 
