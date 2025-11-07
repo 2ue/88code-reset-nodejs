@@ -1,15 +1,16 @@
-name: 88code 重置任务
+name: 88code 重置任务 (已禁用)
 
 permissions:
   contents: write
 
 on:
-  schedule:
-    # 提前10分钟触发首次重置 (18:45 Asia/Shanghai = 10:45 UTC)
-    - cron: '45 10 * * *'
-    # 提前5分钟触发二次重置 (23:51 Asia/Shanghai = 15:51 UTC)
-    - cron: '51 15 * * *'
-
+  # 已禁用 - 不会自动触发
+  # schedule:
+  #   # 提前10分钟触发首次重置 (18:45 Asia/Shanghai = 10:45 UTC)
+  #   - cron: '45 10 * * *'
+  #   # 提前5分钟触发二次重置 (23:51 Asia/Shanghai = 15:51 UTC)
+  #   - cron: '51 15 * * *'
+  #
   # 手动触发（用于测试）
   workflow_dispatch:
     inputs:
