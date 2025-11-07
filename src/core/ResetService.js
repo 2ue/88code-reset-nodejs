@@ -7,6 +7,7 @@ import Logger from '../utils/Logger.js';
 import TimeUtils from '../utils/TimeUtils.js';
 import config from '../config.js';
 import DynamicTimerManager from './DynamicTimerManager.js';
+import NotifierManager from '../notifiers/NotifierManager.js';
 import {
     SUBSCRIPTION_TYPES,
     RESET_TYPES,
@@ -17,6 +18,14 @@ export class ResetService {
     constructor(apiClient) {
         this.apiClient = apiClient;
         this.timerManager = new DynamicTimerManager(); // 使用定时器管理器
+        this.notifierManager = new NotifierManager(config); // 通知管理器
+    }
+
+    /**
+     * 初始化服务
+     */
+    async initialize() {
+        await this.notifierManager.initialize();
     }
 
     /**
@@ -110,6 +119,9 @@ export class ResetService {
                 `成功: ${result.success}, 失败: ${result.failed}, 跳过: ${result.skipped}` +
                 (result.scheduled > 0 ? `, 已调度延迟重置: ${result.scheduled}` : '')
             );
+
+            // 发送通知
+            await this.notifierManager.notify(result);
 
             return result;
 

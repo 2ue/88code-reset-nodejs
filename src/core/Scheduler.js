@@ -37,6 +37,9 @@ export class Scheduler {
     async start() {
         Logger.info('========== 调度器启动 ==========');
 
+        // 初始化 ResetService（包含通知模块）
+        await this.resetService.initialize();
+
         // 第一次重置检查任务
         const firstCron = TimeUtils.toCronExpression(config.firstResetTime);
         const firstJob = cron.schedule(firstCron, () => {

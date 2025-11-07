@@ -108,6 +108,13 @@ export const config = {
     healthCheckPort: parseInt(process.env.HEALTH_CHECK_PORT) || 3000,
     runTestOnStart: process.env.RUN_TEST_ON_START !== 'false',
 
+    // 通知配置
+    enableTelegram: process.env.ENABLE_TELEGRAM === 'true',
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+    telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
+    enableWeCom: process.env.ENABLE_WECOM === 'true',
+    wecomWebhookUrl: process.env.WECOM_WEBHOOK_URL || '',
+
     // 环境
     nodeEnv: process.env.NODE_ENV || 'production',
     rootDir,
