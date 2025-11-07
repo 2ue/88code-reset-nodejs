@@ -18,11 +18,11 @@ export const SUBSCRIPTION_TYPES = {
     PAY_PER_USE: 'PAY_PER_USE',
 };
 
-// 重置类型
+// 重置类型（检查点标识）
 export const RESET_TYPES = {
-    FIRST: 'FIRST',   // 首次重置（18:55）
-    SECOND: 'SECOND', // 二次重置（23:55）
-    MANUAL: 'MANUAL', // 手动重置
+    FIRST: 'FIRST',   // 第一次检查点（默认18:55，可配置）
+    SECOND: 'SECOND', // 第二次检查点（默认23:58，可配置）
+    MANUAL: 'MANUAL', // 手动触发的重置
 };
 
 // 重置状态
@@ -31,19 +31,11 @@ export const RESET_STATUS = {
     FAILED: 'FAILED',
     SKIPPED: 'SKIPPED',
     PARTIAL: 'PARTIAL',
+    SCHEDULED: 'SCHEDULED', // 延迟重置已调度（冷却未满时）
 };
 
 // 冷却期（从配置读取，单位：毫秒）
 export const COOLDOWN_PERIOD = config.cooldownHours * 60 * 60 * 1000;
-
-// 延迟重置配置（从配置读取）
-export const DELAYED_RESET_CONFIG = {
-    // 当天最晚重置时间缓冲（单位：毫秒）
-    // 默认10秒，确保在00:00前完成
-    END_OF_DAY_BUFFER: config.endOfDayBuffer * 1000,
-    // 一天的毫秒数
-    DAY_IN_MS: 24 * 60 * 60 * 1000,
-};
 
 // HTTP状态码
 export const HTTP_STATUS = {
@@ -92,7 +84,6 @@ export default {
     RESET_TYPES,
     RESET_STATUS,
     COOLDOWN_PERIOD,
-    DELAYED_RESET_CONFIG,
     HTTP_STATUS,
     ERROR_CODES,
     LOG_LEVELS,

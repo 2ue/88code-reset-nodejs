@@ -53,18 +53,18 @@ function showHelp() {
   node src/cli.js [选项]
 
 选项：
-  --first, --type=first    执行首次重置（18:55）
-  --second, --type=second  执行二次重置（23:56）
+  --first, --type=first    执行第一次检查点重置
+  --second, --type=second  执行第二次检查点重置
   --force                  强制执行（跳过幂等性检查）
   --dry-run                空运行（不实际执行重置）
   --stats                  显示执行统计
   -h, --help               显示帮助信息
 
 示例：
-  # 执行首次重置（带幂等性检查）
+  # 执行第一次检查点重置（带幂等性检查）
   node src/cli.js --first
 
-  # 强制执行二次重置
+  # 强制执行第二次检查点重置
   node src/cli.js --second --force
 
   # 查看统计信息
@@ -81,8 +81,8 @@ async function showStats() {
 
     Logger.info('========== 执行统计 ==========');
     Logger.info(`今日执行状态:`);
-    Logger.info(`  - 首次重置: ${stats.today.first ? '✅ 已执行' : '⏸️ 未执行'}`);
-    Logger.info(`  - 二次重置: ${stats.today.second ? '✅ 已执行' : '⏸️ 未执行'}`);
+    Logger.info(`  - 第一次检查: ${stats.today.first ? '✅ 已执行' : '⏸️ 未执行'}`);
+    Logger.info(`  - 第二次检查: ${stats.today.second ? '✅ 已执行' : '⏸️ 未执行'}`);
     Logger.info(`最后执行日期: ${stats.lastExecutionDate || '无'}`);
     Logger.info(`历史执行次数: ${stats.totalExecutions}`);
     Logger.info(`最近24小时失败: ${stats.failures}`);

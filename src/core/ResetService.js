@@ -5,6 +5,8 @@
 
 import Logger from '../utils/Logger.js';
 import TimeUtils from '../utils/TimeUtils.js';
+import config from '../config.js';
+import DynamicTimerManager from './DynamicTimerManager.js';
 import {
     SUBSCRIPTION_TYPES,
     RESET_TYPES,
@@ -14,16 +16,16 @@ import {
 export class ResetService {
     constructor(apiClient) {
         this.apiClient = apiClient;
-        this.delayedTimers = new Map(); // 存储延迟定时器
+        this.timerManager = new DynamicTimerManager(); // 使用定时器管理器
     }
 
     /**
-     * 执行重置
-     * @param {string} resetType - 重置类型（FIRST/SECOND）
+     * 执行重置检查
+     * @param {string} resetType - 检查点类型（FIRST/SECOND）
      * @returns {Promise<Object>} 重置结果
      */
     async executeReset(resetType) {
-        Logger.info(`========== 开始执行${resetType === RESET_TYPES.FIRST ? '首次' : '二次'}重置 ==========`);
+        Logger.info(`========== 开始执行${resetType === RESET_TYPES.FIRST ? '第一次检查点' : '第二次检查点'}重置 ==========`);
 
         const result = {
             resetType,
@@ -35,6 +37,7 @@ export class ResetService {
             success: 0,
             failed: 0,
             skipped: 0,
+            scheduled: 0, // 新增：延迟重置调度计数
             details: [],
         };
 
@@ -70,6 +73,8 @@ export class ResetService {
 
                     if (detail.status === RESET_STATUS.SUCCESS) {
                         result.success++;
+                    } else if (detail.status === RESET_STATUS.SCHEDULED) {
+                        result.scheduled++; // 延迟重置调度
                     } else if (detail.status === RESET_STATUS.SKIPPED) {
                         result.skipped++;
                     } else {
@@ -89,9 +94,9 @@ export class ResetService {
                     }
                 }
 
-                // 每次重置后延迟1秒
+                // 每次重置后延迟（使用配置值）
                 if (subscription !== eligibleSubscriptions[eligibleSubscriptions.length - 1]) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await new Promise(resolve => setTimeout(resolve, config.requestIntervalMs));
                 }
             }
 
@@ -101,7 +106,10 @@ export class ResetService {
 
             Logger.info(`========== 重置完成 ==========`);
             Logger.info(`总耗时: ${(result.totalDuration / 1000).toFixed(2)}秒`);
-            Logger.info(`成功: ${result.success}, 失败: ${result.failed}, 跳过: ${result.skipped}`);
+            Logger.info(
+                `成功: ${result.success}, 失败: ${result.failed}, 跳过: ${result.skipped}` +
+                (result.scheduled > 0 ? `, 已调度延迟重置: ${result.scheduled}` : '')
+            );
 
             return result;
 
@@ -117,7 +125,7 @@ export class ResetService {
     /**
      * 判断订阅是否符合重置条件
      * @param {Object} subscription - 订阅对象
-     * @param {string} resetType - 重置类型
+     * @param {string} resetType - 检查点类型（FIRST/SECOND）
      * @returns {boolean}
      */
     isEligible(subscription, resetType) {
@@ -141,27 +149,33 @@ export class ResetService {
             return false;
         }
 
-        // P2: 冷却检查
+        // P2: 冷却检查（第二次检查点允许延迟重置）
         const cooldown = TimeUtils.checkCooldown(subscription.lastCreditReset);
         if (!cooldown.passed) {
-            Logger.warn(`[订阅${subId}] 冷却中，还需等待 ${cooldown.formatted}`);
-            return false;
+            if (resetType === RESET_TYPES.FIRST) {
+                // 第一次检查点：冷却未过直接跳过
+                Logger.warn(`[订阅${subId}] 冷却中，还需等待 ${cooldown.formatted}`);
+                return false;
+            }
+            // 第二次检查点：冷却未过也允许通过，进入延迟重置逻辑
+            Logger.info(`[订阅${subId}] 冷却中，将设置延迟重置（${cooldown.formatted}后）`);
+            // 不 return false，继续执行后续检查
         }
 
-        // P3: 重置次数检查（关键策略）
+        // P3: 重置次数检查（核心策略）
         if (resetType === RESET_TYPES.FIRST) {
-            // 首次重置：只有resetTimes==2时才重置
+            // 第一次检查点：只在重置次数=2时重置（保守策略，保留重置机会）
             if (subscription.resetTimes < 2) {
                 Logger.info(
-                    `[订阅${subId}] 首次重置跳过，resetTimes=${subscription.resetTimes} (用户已手动重置)`
+                    `[订阅${subId}] 第一次检查跳过，剩余次数${subscription.resetTimes}（保留给第二次检查）`
                 );
                 return false;
             }
         } else if (resetType === RESET_TYPES.SECOND) {
-            // 二次重置：resetTimes>=1就重置
+            // 第二次检查点：重置次数>=1就重置（兜底策略，最大化利用）
             if (subscription.resetTimes < 1) {
                 Logger.info(
-                    `[订阅${subId}] 二次重置跳过，resetTimes=${subscription.resetTimes} (次数已用完)`
+                    `[订阅${subId}] 第二次检查跳过，剩余次数${subscription.resetTimes}（次数已用完）`
                 );
                 return false;
             }
@@ -172,10 +186,10 @@ export class ResetService {
 
     /**
      * 处理单个订阅（带延迟重置支持）
-     * 仅用于第二次重置（23:56）
+     * 用于第二次检查点，支持冷却未满时延迟重置
      * @param {Object} subscription - 订阅对象
-     * @param {string} resetType - 重置类型
-     * @returns {Promise<Object>} 处理结果
+     * @param {string} resetType - 检查点类型（通常为SECOND）
+     * @returns {Promise<Object>} 处理结果（立即返回，不阻塞主流程）
      */
     async processSubscriptionWithDelay(subscription, resetType) {
         const subId = subscription.id;
@@ -186,67 +200,46 @@ export class ResetService {
             return await this.processSubscription(subscription, resetType);
         }
 
-        // 还在冷却中，检查是否能在今天完成
+        // 冷却未满，精确计算下次可重置时间（支持跨天）
         const cooldownEndTime = TimeUtils.getCooldownEndTime(subscription.lastCreditReset);
-        const canFinishToday = TimeUtils.isBeforeTodayEnd(cooldownEndTime);
-
-        if (!canFinishToday) {
-            // 冷却结束时间超过23:59:49，无法在今天完成
-            Logger.warn(
-                `[订阅${subId}] 冷却中，今天无法完成第二次重置 ` +
-                `(冷却结束时间: ${TimeUtils.formatDateTime(cooldownEndTime)}, ` +
-                `还需等待: ${cooldown.formatted})`
-            );
-
-            return {
-                subscriptionId: subId,
-                subscriptionName: subscription.subscriptionPlanName,
-                status: RESET_STATUS.SKIPPED,
-                message: '冷却中，今天无法完成重置',
-                cooldownEndTime: TimeUtils.formatDateTime(cooldownEndTime),
-            };
-        }
-
-        // 可以在今天完成，创建延迟定时器
         const now = Date.now();
-        const delayMs = cooldownEndTime - now;
+        const delayMs = Math.max(0, cooldownEndTime - now + 1000); // 额外等待1秒缓冲
 
         Logger.info(
-            `[订阅${subId}] 冷却中，将在 ${TimeUtils.formatDateTime(cooldownEndTime)} ` +
-            `执行延迟重置（${Math.ceil(delayMs / 1000)}秒后）`
+            `[订阅${subId}] 冷却中，已调度延迟重置，将在 ${TimeUtils.formatDateTime(cooldownEndTime)} 执行 ` +
+            `（${Math.ceil(delayMs / 1000)}秒后）`
         );
 
-        // 创建延迟定时器
-        return new Promise((resolve) => {
-            const timerId = setTimeout(async () => {
-                Logger.info(`[订阅${subId}] 开始执行延迟重置`);
+        // 创建后台延迟定时器（不阻塞主流程）
+        const timerId = setTimeout(async () => {
+            Logger.info(`[订阅${subId}] 开始执行延迟重置`);
 
-                try {
-                    const result = await this.processSubscription(subscription, resetType);
-                    this.delayedTimers.delete(subId);
-                    resolve(result);
-                } catch (error) {
-                    Logger.error(`[订阅${subId}] 延迟重置失败`, error);
-                    this.delayedTimers.delete(subId);
-                    resolve({
-                        subscriptionId: subId,
-                        subscriptionName: subscription.subscriptionPlanName,
-                        status: RESET_STATUS.FAILED,
-                        message: '延迟重置失败',
-                        error: error.message,
-                    });
-                }
-            }, delayMs);
+            try {
+                await this.processSubscription(subscription, resetType);
+                this.timerManager.clear(`delayed-reset-${subId}`);
+            } catch (error) {
+                Logger.error(`[订阅${subId}] 延迟重置失败`, error);
+                this.timerManager.clear(`delayed-reset-${subId}`);
+            }
+        }, delayMs);
 
-            // 保存定时器引用
-            this.delayedTimers.set(subId, timerId);
-        });
+        // 保存定时器引用
+        this.timerManager.set(`delayed-reset-${subId}`, timerId);
+
+        // 立即返回 SCHEDULED 状态，不等待定时器执行
+        return {
+            subscriptionId: subId,
+            subscriptionName: subscription.subscriptionPlanName,
+            status: RESET_STATUS.SCHEDULED,
+            message: `已调度延迟重置，将在 ${TimeUtils.formatDateTime(cooldownEndTime)} 执行`,
+            scheduledTime: cooldownEndTime,
+        };
     }
 
     /**
      * 处理单个订阅
      * @param {Object} subscription - 订阅对象
-     * @param {string} resetType - 重置类型
+     * @param {string} resetType - 检查点类型
      * @returns {Promise<Object>} 处理结果
      */
     async processSubscription(subscription, resetType) {
@@ -265,22 +258,22 @@ export class ResetService {
         };
 
         try {
-            // 无脑重置策略（无论余额多少）
+            // 直接重置策略（无论余额多少）
             if (resetType === RESET_TYPES.FIRST) {
                 Logger.info(
-                    `[订阅${subId}] 执行首次重置 (重置次数满 2/2，当前余额 ${creditPercent.toFixed(1)}%)`
+                    `[订阅${subId}] 执行第一次检查点重置（重置次数完整，当前余额 ${creditPercent.toFixed(1)}%）`
                 );
             } else {
                 Logger.info(
-                    `[订阅${subId}] 执行二次重置 (用完剩余次数 ${subscription.resetTimes}/2，当前余额 ${creditPercent.toFixed(1)}%)`
+                    `[订阅${subId}] 执行第二次检查点重置（剩余次数 ${subscription.resetTimes}，当前余额 ${creditPercent.toFixed(1)}%）`
                 );
             }
 
             // 执行重置
-            const resetResult = await this.apiClient.resetCredits(subId);
+            await this.apiClient.resetCredits(subId);
 
-            // 等待3秒让API更新
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // 等待API更新（使用配置值）
+            await new Promise(resolve => setTimeout(resolve, config.resetVerificationWaitMs));
 
             // 重新获取订阅信息验证
             const updatedSubscriptions = await this.apiClient.getSubscriptions();
@@ -332,11 +325,8 @@ export class ResetService {
      * 用��程序关闭时清理
      */
     clearDelayedTimers() {
-        for (const [subId, timerId] of this.delayedTimers.entries()) {
-            clearTimeout(timerId);
-            Logger.debug(`已清理订阅${subId}的延迟定时器`);
-        }
-        this.delayedTimers.clear();
+        Logger.info('清理所有延迟定时器...');
+        this.timerManager.clearAll();
     }
 }
 

@@ -37,7 +37,7 @@ export class Scheduler {
     async start() {
         Logger.info('========== 调度器启动 ==========');
 
-        // 首次重置任务
+        // 第一次重置检查任务
         const firstCron = TimeUtils.toCronExpression(config.firstResetTime);
         const firstJob = cron.schedule(firstCron, () => {
             this.executeWithLock(LOCK_NAMES.FIRST_RESET, RESET_TYPES.FIRST);
@@ -45,7 +45,7 @@ export class Scheduler {
 
         this.jobs.push({ name: 'first-reset', job: firstJob });
 
-        // 二次重置任务
+        // 第二次重置检查任务
         const secondCron = TimeUtils.toCronExpression(config.secondResetTime);
         const secondJob = cron.schedule(secondCron, () => {
             this.executeWithLock(LOCK_NAMES.SECOND_RESET, RESET_TYPES.SECOND);
@@ -53,15 +53,28 @@ export class Scheduler {
 
         this.jobs.push({ name: 'second-reset', job: secondJob });
 
-        Logger.info(`首次重置: ${config.firstResetTime} (${config.timezone})`);
-        Logger.info(`二次重置: ${config.secondResetTime} (${config.timezone})`);
-
-        // 显示下次执行时间
+        // 计算下次执行时间
         const nextFirst = TimeUtils.getMillisUntilNext(config.firstResetTime);
         const nextSecond = TimeUtils.getMillisUntilNext(config.secondResetTime);
 
-        Logger.info(`下次首次重置: ${TimeUtils.formatDuration(nextFirst)}后`);
-        Logger.info(`下次二次重置: ${TimeUtils.formatDuration(nextSecond)}后`);
+        const now = new Date();
+        const nextFirstTime = new Date(now.getTime() + nextFirst);
+        const nextSecondTime = new Date(now.getTime() + nextSecond);
+
+        const formatTime = (date) => {
+            return date.toLocaleString('zh-CN', {
+                timeZone: config.timezone,
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(/\//g, '-');
+        };
+
+        Logger.info(`定时检查: 每天 ${config.firstResetTime} 和 ${config.secondResetTime}`);
+        Logger.info(`下次执行: ${formatTime(nextFirstTime)} (${TimeUtils.formatDuration(nextFirst)}后)`);
+        Logger.info(`          ${formatTime(nextSecondTime)} (${TimeUtils.formatDuration(nextSecond)}后)`);
     }
 
     async executeWithLock(lockName, resetType) {

@@ -76,9 +76,6 @@ export const config = {
     // 冷却期配置（单位：小时）
     cooldownHours: parseInt(process.env.COOLDOWN_HOURS) || 5,
 
-    // 延迟重置配置
-    endOfDayBuffer: parseInt(process.env.END_OF_DAY_BUFFER) || 10, // 单位：秒
-
     // 重试配置
     enableRetry: process.env.ENABLE_RETRY !== 'false',
     maxRetries: parseInt(process.env.MAX_RETRIES) || 3,
@@ -101,6 +98,11 @@ export const config = {
     enableHistory: process.env.ENABLE_HISTORY !== 'false',
     historyMaxDays: parseInt(process.env.HISTORY_MAX_DAYS) || 90,
 
+    // 性能调优
+    requestIntervalMs: parseInt(process.env.REQUEST_INTERVAL_MS) || 1000,
+    resetVerificationWaitMs: parseInt(process.env.RESET_VERIFICATION_WAIT_MS) || 3000,
+    rateLimitWaitTimeout: parseInt(process.env.RATE_LIMIT_WAIT_TIMEOUT) || 60000,
+
     // 高级配置
     enableHealthCheck: process.env.ENABLE_HEALTH_CHECK === 'true',
     healthCheckPort: parseInt(process.env.HEALTH_CHECK_PORT) || 3000,
@@ -113,6 +115,10 @@ export const config = {
 
 // 验证配置
 validateConfig(config);
+
+// 验证检查点时间配置
+import ConfigValidator from './utils/ConfigValidator.js';
+ConfigValidator.validateCheckpointTimes(config.firstResetTime, config.secondResetTime);
 
 // 导出配置
 export default config;

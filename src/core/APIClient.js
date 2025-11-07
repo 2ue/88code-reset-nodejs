@@ -43,7 +43,7 @@ export class APIClient {
             async (requestConfig) => {
                 // 速率限制检查
                 if (config.enableRateLimit && APIClient.rateLimiter) {
-                    const hasToken = await APIClient.rateLimiter.waitForToken(60000);
+                    const hasToken = await APIClient.rateLimiter.waitForToken(config.rateLimitWaitTimeout);
                     if (!hasToken) {
                         throw new Error('RATE_LIMIT_EXCEEDED: 等待令牌超时');
                     }

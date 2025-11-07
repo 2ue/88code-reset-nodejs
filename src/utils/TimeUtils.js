@@ -6,7 +6,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
-import { COOLDOWN_PERIOD, DELAYED_RESET_CONFIG } from '../constants.js';
+import { COOLDOWN_PERIOD } from '../constants.js';
 import config from '../config.js';
 
 // 扩展 dayjs 时区支持
@@ -129,6 +129,11 @@ export class TimeUtils {
 
     /**
      * 解析Cron时间字符串到小时和分钟
+     *
+     * ⚠️ 注意：此方法与 ConfigValidator.parseTime 功能相同
+     * 但因循环依赖问题（config.js → ConfigValidator → TimeUtils → config）
+     * 两处保留独立实现
+     *
      * @param {string} timeStr - 时间字符串（HH:MM）
      * @returns {Object} { hour: number, minute: number }
      */
@@ -181,35 +186,6 @@ export class TimeUtils {
         }
 
         return next.valueOf() - now.valueOf();
-    }
-
-    /**
-     * 获取当天结束时间（23:59:49）
-     * 保留10秒缓冲时间，确保重置能在00:00前完成
-     * 使用配置的时区
-     * @returns {number} 当天23:59:49的时间戳（毫秒）
-     */
-    static getTodayEnd() {
-        // 在配置时区中获取当天的 23:59:59.999
-        const todayEnd = dayjs()
-            .tz(config.timezone)
-            .hour(23)
-            .minute(59)
-            .second(59)
-            .millisecond(999);
-
-        // 减去缓冲时间（10秒）
-        return todayEnd.valueOf() - DELAYED_RESET_CONFIG.END_OF_DAY_BUFFER;
-    }
-
-    /**
-     * 检查某个时间戳是否在当天结束前
-     * @param {number} timestamp - 时间戳（毫秒）
-     * @returns {boolean} 是否在当天23:59:49前
-     */
-    static isBeforeTodayEnd(timestamp) {
-        const todayEnd = TimeUtils.getTodayEnd();
-        return timestamp <= todayEnd;
     }
 
     /**

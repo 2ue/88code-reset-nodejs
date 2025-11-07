@@ -35,11 +35,8 @@ async function main() {
         Logger.info('========================================');
         Logger.info('  88code 自动重置工具 v1.0.0');
         Logger.info('========================================');
-        Logger.info(`当前服务器时区: ${systemTimezone} (UTC${systemOffsetStr})`);
-        Logger.info(`当前服务器时间(UTC): ${now.toISOString()}`);
-        Logger.info('----------------------------------------');
-        Logger.info(`环境变量配置时区: ${configTimezone}`);
-        Logger.info(`配置时区当前时间: ${configTime}`);
+        Logger.info(`当前时区: ${configTimezone} (UTC${systemOffsetStr})`);
+        Logger.info(`当前时间: ${configTime}`);
         Logger.info('========================================');
 
         // 测试模式
@@ -88,7 +85,7 @@ async function runTest() {
         const success = await client.testConnection();
 
         if (success) {
-            Logger.success(`✅ API Key 测试成功: ${Logger.sanitizeAPIKey(apiKey)}`);
+            Logger.success(`API Key 测试成功: ${Logger.sanitizeAPIKey(apiKey)}`);
 
             // 获取订阅信息
             const subscriptions = await client.getSubscriptions();
@@ -96,7 +93,7 @@ async function runTest() {
 
             for (const sub of subscriptions) {
                 const percent = (sub.currentCredits / sub.subscriptionPlan.creditLimit * 100).toFixed(1);
-                Logger.info(`  - 订阅${sub.id}: ${sub.subscriptionPlanName}, 余额${percent}%, resetTimes=${sub.resetTimes}`);
+                Logger.info(`  - 订阅${sub.id}: ${sub.subscriptionPlanName}, 余额${percent}%, 剩余次数${sub.resetTimes}`);
             }
         } else {
             Logger.error(`❌ API Key 测试失败: ${Logger.sanitizeAPIKey(apiKey)}`);
