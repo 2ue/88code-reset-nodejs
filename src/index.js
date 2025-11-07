@@ -13,8 +13,33 @@ let scheduler;
 
 async function main() {
     try {
+        // 获取服务器时间和时区信息
+        const now = new Date();
+        const systemTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const systemOffset = -now.getTimezoneOffset() / 60;
+        const systemOffsetStr = systemOffset >= 0 ? `+${systemOffset}` : `${systemOffset}`;
+
+        // 配置的时区（用于定时任务）
+        const configTimezone = config.timezone;
+        const configTime = now.toLocaleString('zh-CN', {
+            timeZone: configTimezone,
+            hour12: false,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
         Logger.info('========================================');
         Logger.info('  88code 自动重置工具 v1.0.0');
+        Logger.info('========================================');
+        Logger.info(`当前服务器时区: ${systemTimezone} (UTC${systemOffsetStr})`);
+        Logger.info(`当前服务器时间(UTC): ${now.toISOString()}`);
+        Logger.info('----------------------------------------');
+        Logger.info(`环境变量配置时区: ${configTimezone}`);
+        Logger.info(`配置时区当前时间: ${configTime}`);
         Logger.info('========================================');
 
         // 测试模式

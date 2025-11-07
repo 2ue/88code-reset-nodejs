@@ -1,6 +1,6 @@
 {
   "name": "88code-reset-nodejs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "88code 自动重置工具 - Node.js 实现，智能额度最大化策略，每日理论上限300 credits",
   "type": "module",
   "main": "src/index.js",
@@ -40,12 +40,12 @@
   "packageManager": "pnpm@9.15.0",
   "dependencies": {
     "axios": "^1.6.0",
+    "dayjs": "^1.11.19",
     "dotenv": "^16.3.1",
     "node-cron": "^3.0.3",
     "p-limit": "^5.0.0",
     "winston": "^3.11.0"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/2ue/88code-reset-nodejs"

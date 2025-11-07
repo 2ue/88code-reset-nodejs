@@ -3,7 +3,15 @@
  * 处理时间相关的计算和格式化
  */
 
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
 import { COOLDOWN_PERIOD, DELAYED_RESET_CONFIG } from '../constants.js';
+import config from '../config.js';
+
+// 扩展 dayjs 时区支持
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export class TimeUtils {
     /**
@@ -83,7 +91,7 @@ export class TimeUtils {
     }
 
     /**
-     * 格式化日期时间
+     * 格式化日期时间（使用配置的时区）
      * @param {Date|number|string} dateInput - 日期输入
      * @returns {string} 格式化字符串
      */
@@ -96,7 +104,7 @@ export class TimeUtils {
             }
 
             return date.toLocaleString('zh-CN', {
-                timeZone: 'Asia/Shanghai',
+                timeZone: config.timezone,
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
@@ -112,15 +120,11 @@ export class TimeUtils {
 
     /**
      * 获取今天的日期字符串（YYYY-MM-DD）
+     * 使用配置的时区
      * @returns {string}
      */
     static getTodayDateString() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-
-        return `${year}-${month}-${day}`;
+        return dayjs().tz(config.timezone).format('YYYY-MM-DD');
     }
 
     /**
@@ -160,36 +164,42 @@ export class TimeUtils {
 
     /**
      * 计算距离下次执行的时间
+     * 使用配置的时区进行计算
      * @param {string} timeStr - 时间字符串（HH:MM）
      * @returns {number} 毫秒数
      */
     static getMillisUntilNext(timeStr) {
         const { hour, minute } = TimeUtils.parseCronTime(timeStr);
-        const now = new Date();
+        const now = dayjs().tz(config.timezone);
 
-        const next = new Date();
-        next.setHours(hour, minute, 0, 0);
+        // 在配置时区中设置目标时间
+        let next = now.hour(hour).minute(minute).second(0).millisecond(0);
 
         // 如果今天的时间已过，设置为明天
-        if (next.getTime() <= now.getTime()) {
-            next.setDate(next.getDate() + 1);
+        if (next.isBefore(now) || next.isSame(now)) {
+            next = next.add(1, 'day');
         }
 
-        return next.getTime() - now.getTime();
+        return next.valueOf() - now.valueOf();
     }
 
     /**
      * 获取当天结束时间（23:59:49）
      * 保留10秒缓冲时间，确保重置能在00:00前完成
+     * 使用配置的时区
      * @returns {number} 当天23:59:49的时间戳（毫秒）
      */
     static getTodayEnd() {
-        const now = new Date();
-        const todayEnd = new Date(now);
-        todayEnd.setHours(23, 59, 59, 999); // 先设置到23:59:59.999
+        // 在配置时区中获取当天的 23:59:59.999
+        const todayEnd = dayjs()
+            .tz(config.timezone)
+            .hour(23)
+            .minute(59)
+            .second(59)
+            .millisecond(999);
 
         // 减去缓冲时间（10秒）
-        return todayEnd.getTime() - DELAYED_RESET_CONFIG.END_OF_DAY_BUFFER;
+        return todayEnd.valueOf() - DELAYED_RESET_CONFIG.END_OF_DAY_BUFFER;
     }
 
     /**
