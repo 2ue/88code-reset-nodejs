@@ -6,11 +6,15 @@
 export class ConfigValidator {
     /**
      * 验证检查点时间配置
-     * 确保两个检查点间隔>=5小时2分钟,避免冷却期冲突
+     * 确保两个检查点间隔>=5小时,避免冷却期冲突
+     *
+     * 作用：防止用户配置的两个检查点时间间隔过短，导致第二次检查时
+     * 第一次重置的冷却期还未结束，虽然有延迟重置功能兜底，但间隔太短
+     * 会导致延迟时间过长，影响用户体验
      *
      * @param {string} firstTime - 第一次检查时间 (HH:MM)
      * @param {string} secondTime - 第二次检查时间 (HH:MM)
-     * @throws {Error} 如果间隔不足5小时2分钟
+     * @throws {Error} 如果间隔不足5小时
      */
     static validateCheckpointTimes(firstTime, secondTime) {
         const first = this.parseTime(firstTime);
@@ -24,9 +28,9 @@ export class ConfigValidator {
             diffMinutes += 24 * 60;
         }
 
-        // 最小间隔：5小时2分钟 = 302分钟
-        // 留2分钟缓冲,避免边界问题
-        const MIN_INTERVAL = 5 * 60 + 2;
+        // 最小间隔：5小时 = 300分钟
+        // 有智能延迟重置功能，冷却未满时会自动等待，无需额外缓冲
+        const MIN_INTERVAL = 5 * 60;
 
         if (diffMinutes < MIN_INTERVAL) {
             const error =
@@ -34,11 +38,11 @@ export class ConfigValidator {
                 `  第一次检查: ${firstTime}\n` +
                 `  第二次检查: ${secondTime}\n` +
                 `  实际间隔: ${diffMinutes}分钟 (${this.formatMinutes(diffMinutes)})\n` +
-                `  要求间隔: 至少 ${MIN_INTERVAL}分钟 (5小时2分钟)\n\n` +
+                `  要求间隔: 至少 ${MIN_INTERVAL}分钟 (5小时)\n\n` +
                 `推荐配置组合:\n` +
+                `  - 18:55 和 23:55 (间隔 5小时) ✅ 最低要求\n` +
                 `  - 18:55 和 23:58 (间隔 5小时3分钟) ✅ 推荐\n` +
-                `  - 18:50 和 23:58 (间隔 5小时8分钟) ✅ 更安全\n` +
-                `  - 18:55 和 23:57 (间隔 5小时2分钟) ⚠️  最低限度`;
+                `  - 18:50 和 23:58 (间隔 5小时8分钟) ✅ 更安全`;
 
             throw new Error(error);
         }

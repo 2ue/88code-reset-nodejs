@@ -26,8 +26,10 @@ export class RateLimiter {
         const now = Date.now();
         const timePassed = now - this.lastRefill;
 
-        // 每分钟补充refillRate个令牌
-        const refillInterval = 60000; // 1分钟
+        // 令牌补充周期：1分钟（60000毫秒）
+        // 这是算法实现的一部分，定义了 refillRate 的语义单位（令牌/分钟）
+        // 不应该配置化，否则会导致 refillRate 的含义不确定
+        const refillInterval = 60000;
         const tokensToAdd = (timePassed / refillInterval) * this.refillRate;
 
         if (tokensToAdd > 0) {
