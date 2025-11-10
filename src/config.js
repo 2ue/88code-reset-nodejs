@@ -92,6 +92,7 @@ export const config = {
     logDir: process.env.LOG_DIR || './logs',
     logMaxSize: parseInt(process.env.LOG_MAX_SIZE) || 10,
     logMaxDays: parseInt(process.env.LOG_MAX_DAYS) || 30,
+    enableApiRequestLog: process.env.ENABLE_API_REQUEST_LOG === 'true',
 
     // 存储配置
     dataDir: process.env.DATA_DIR || './data',

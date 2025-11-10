@@ -68,6 +68,7 @@ if (config.logFileEnabled) {
     logger.add(new winston.transports.File({
         filename: join(config.logDir, `reset-${today}.log`),
         maxsize: config.logMaxSize * 1024 * 1024,
+        maxFiles: config.logMaxDays,
     }));
 }
 

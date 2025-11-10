@@ -52,12 +52,28 @@ export class APIClient {
                 // 添加Authorization头
                 requestConfig.headers.Authorization = this.apiKey;
 
-                Logger.debug(
-                    `API请求: ${requestConfig.method.toUpperCase()} ${requestConfig.url}`,
-                    {
-                        apiKey: Logger.sanitizeAPIKey(this.apiKey),
+                // 详细API请求日志（可配置开关）
+                if (config.enableApiRequestLog) {
+                    Logger.info(
+                        `[API请求] ${requestConfig.method.toUpperCase()} ${requestConfig.baseURL}${requestConfig.url}`
+                    );
+                    Logger.info(
+                        `[请求头] ${JSON.stringify({
+                            ...requestConfig.headers,
+                            Authorization: Logger.sanitizeAPIKey(requestConfig.headers.Authorization)
+                        }, null, 2)}`
+                    );
+                    if (requestConfig.data) {
+                        Logger.info(`[请求体] ${JSON.stringify(requestConfig.data, null, 2)}`);
                     }
-                );
+                } else {
+                    Logger.debug(
+                        `API请求: ${requestConfig.method.toUpperCase()} ${requestConfig.url}`,
+                        {
+                            apiKey: Logger.sanitizeAPIKey(this.apiKey),
+                        }
+                    );
+                }
 
                 return requestConfig;
             },
@@ -70,13 +86,35 @@ export class APIClient {
         // 响应拦截器
         this.client.interceptors.response.use(
             (response) => {
-                Logger.debug(
-                    `API响应: ${response.status} ${response.config.url}`,
-                    {
-                        status: response.status,
-                        statusText: response.statusText,
+                // 详细API响应日志（可配置开关）
+                if (config.enableApiRequestLog) {
+                    Logger.info(
+                        `[API响应] ${response.status} ${response.statusText} ${response.config.method.toUpperCase()} ${response.config.url}`
+                    );
+                    Logger.info(
+                        `[响应头] ${JSON.stringify(response.headers, null, 2)}`
+                    );
+                    if (response.data) {
+                        const dataStr = typeof response.data === 'object'
+                            ? JSON.stringify(response.data, null, 2)
+                            : String(response.data);
+                        // 限制响应体日志长度，避免过大
+                        const maxLength = 5000;
+                        if (dataStr.length > maxLength) {
+                            Logger.info(`[响应体] ${dataStr.substring(0, maxLength)}... (已截断，总长度: ${dataStr.length})`);
+                        } else {
+                            Logger.info(`[响应体] ${dataStr}`);
+                        }
                     }
-                );
+                } else {
+                    Logger.debug(
+                        `API响应: ${response.status} ${response.config.url}`,
+                        {
+                            status: response.status,
+                            statusText: response.statusText,
+                        }
+                    );
+                }
 
                 return response;
             },
@@ -84,15 +122,21 @@ export class APIClient {
                 if (error.response) {
                     const { status, statusText, data } = error.response;
 
-                    Logger.error(
-                        `API错误: ${status} ${statusText} ${error.config.url}`,
-                        null,
-                        {
-                            status,
-                            statusText,
-                            data: typeof data === 'object' ? JSON.stringify(data) : data,
-                        }
-                    );
+                    // 详细错误日志（可配置开关）
+                    if (config.enableApiRequestLog) {
+                        Logger.error(`[API错误] ${status} ${statusText} ${error.config.method.toUpperCase()} ${error.config.url}`);
+                        Logger.error(`[错误响应体] ${JSON.stringify(data, null, 2)}`);
+                    } else {
+                        Logger.error(
+                            `API错误: ${status} ${statusText} ${error.config.url}`,
+                            null,
+                            {
+                                status,
+                                statusText,
+                                data: typeof data === 'object' ? JSON.stringify(data) : data,
+                            }
+                        );
+                    }
 
                     // 特殊处理429限流
                     if (status === HTTP_STATUS.TOO_MANY_REQUESTS) {
@@ -136,8 +180,6 @@ export class APIClient {
      * @returns {Promise<Array>} 订阅列表
      */
     async getSubscriptions() {
-        Logger.info('获取订阅列表...');
-
         const execute = async () => {
             const response = await this.client.post(API_ENDPOINTS.SUBSCRIPTION);
             return response.data;
@@ -146,8 +188,6 @@ export class APIClient {
         const subscriptions = config.enableRetry
             ? await RetryHelper.withRetry(execute)
             : await execute();
-
-        Logger.info(`获取到 ${subscriptions.length} 个订阅`);
 
         return subscriptions;
     }
@@ -158,8 +198,6 @@ export class APIClient {
      * @returns {Promise<Object>} 重置响应
      */
     async resetCredits(subscriptionId) {
-        Logger.info(`开始重置订阅: ${subscriptionId}`);
-
         const execute = async () => {
             const endpoint = `${API_ENDPOINTS.RESET_CREDITS}/${subscriptionId}`;
             const response = await this.client.post(endpoint);
@@ -197,8 +235,6 @@ export class APIClient {
         if (result.success === false) {
             throw new Error(result.message || '重置失败');
         }
-
-        Logger.success(`订阅 ${subscriptionId} 重置成功`);
 
         return result;
     }

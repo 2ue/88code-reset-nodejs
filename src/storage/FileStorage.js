@@ -56,9 +56,9 @@ export class FileStorage {
 
         try {
             const files = await fs.readdir(this.dataDir);
-            const now = Date.now();
-            const maxAge = config.historyMaxDays * 24 * 60 * 60 * 1000;
 
+            // 筛选出历史记录文件
+            const historyFiles = [];
             for (const file of files) {
                 if (!file.startsWith('reset-') || !file.endsWith('.json')) {
                     continue;
@@ -66,12 +66,27 @@ export class FileStorage {
 
                 const filepath = join(this.dataDir, file);
                 const stats = await fs.stat(filepath);
-                const age = now - stats.mtimeMs;
+                historyFiles.push({
+                    name: file,
+                    path: filepath,
+                    mtime: stats.mtimeMs,
+                });
+            }
 
-                if (age > maxAge) {
-                    await fs.unlink(filepath);
-                    Logger.debug(`清理旧历史文件: ${file}`);
-                }
+            // 按修改时间降序排序（最新的在前）
+            historyFiles.sort((a, b) => b.mtime - a.mtime);
+
+            // 保留最新的 historyMaxDays 个文件，删除其余的
+            const maxFiles = config.historyMaxDays;
+            const filesToDelete = historyFiles.slice(maxFiles);
+
+            for (const file of filesToDelete) {
+                await fs.unlink(file.path);
+                Logger.debug(`清理旧历史文件: ${file.name} (保留最新${maxFiles}个)`);
+            }
+
+            if (filesToDelete.length > 0) {
+                Logger.info(`已清理 ${filesToDelete.length} 个旧历史文件，保留最新 ${Math.min(historyFiles.length, maxFiles)} 个`);
             }
         } catch (error) {
             Logger.error('清理历史文件失败', error);

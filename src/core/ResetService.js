@@ -22,6 +22,16 @@ export class ResetService {
     }
 
     /**
+     * 格式化订阅标识（统一格式：[名称订阅(ID)]）
+     * @param {Object} subscription - 订阅对象
+     * @returns {string} 格式化的订阅标识
+     */
+    formatSubscriptionId(subscription) {
+        const name = subscription.subscriptionPlanName || 'UNKNOWN';
+        return `[${name}订阅(${subscription.id})]`;
+    }
+
+    /**
      * 初始化服务
      */
     async initialize() {
@@ -52,6 +62,7 @@ export class ResetService {
 
         try {
             // 1. 获取订阅列表
+            Logger.info('获取订阅列表...');
             const subscriptions = await this.apiClient.getSubscriptions();
             result.totalSubscriptions = subscriptions.length;
 
@@ -64,7 +75,7 @@ export class ResetService {
 
             result.eligible = eligibleSubscriptions.length;
 
-            Logger.info(`符合条件的订阅: ${eligibleSubscriptions.length} 个`);
+            Logger.info(`符合条件: ${eligibleSubscriptions.length} 个`);
 
             if (eligibleSubscriptions.length === 0) {
                 Logger.warn('没有符合条件的订阅，跳过重置');
@@ -141,23 +152,24 @@ export class ResetService {
      * @returns {boolean}
      */
     isEligible(subscription, resetType) {
-        const subId = subscription.id;
+        const subId = this.formatSubscriptionId(subscription);
+        const lastReset = subscription.lastCreditReset ? TimeUtils.formatDateTime(new Date(subscription.lastCreditReset)) : '从未重置';
 
         // P0: PAYGO保护（最高优先级）
         if (this.isPAYGO(subscription)) {
-            Logger.warn(`[订阅${subId}] 🚨 PAYGO订阅，已跳过`);
+            Logger.warn(`${subId} 🚨 PAYGO订阅，已跳过`);
             return false;
         }
 
         // P1: 订阅类型检查
         if (subscription.subscriptionPlan.planType !== SUBSCRIPTION_TYPES.MONTHLY) {
-            Logger.debug(`[订阅${subId}] 非MONTHLY订阅，已跳过`);
+            Logger.debug(`${subId} 非MONTHLY订阅，已跳过`);
             return false;
         }
 
         // P1: 激活状态检查
         if (!subscription.isActive) {
-            Logger.debug(`[订阅${subId}] 订阅未激活，已跳过`);
+            Logger.debug(`${subId} 订阅未激活，已跳过`);
             return false;
         }
 
@@ -166,12 +178,12 @@ export class ResetService {
         if (!cooldown.passed) {
             if (resetType === RESET_TYPES.FIRST) {
                 // 第一次检查点：冷却未过直接跳过
-                Logger.warn(`[订阅${subId}] 冷却中，还需等待 ${cooldown.formatted}`);
+                Logger.warn(`${subId} 冷却中（上次重置: ${lastReset}），还需 ${cooldown.formatted}`);
                 return false;
             }
             // 第二次检查点：冷却未过也允许通过，进入延迟重置逻辑
-            Logger.info(`[订阅${subId}] 冷却中，将设置延迟重置（${cooldown.formatted}后）`);
-            // 不 return false，继续执行后续检查
+            // 注意：这里不输出日志，避免与后续resetTimes检查的日志矛盾
+            // 实际是否延迟重置由processSubscriptionWithDelay决定
         }
 
         // P3: 重置次数检查（核心策略）
@@ -179,7 +191,7 @@ export class ResetService {
             // 第一次检查点：只在重置次数=2时重置（保守策略，保留重置机会）
             if (subscription.resetTimes < 2) {
                 Logger.info(
-                    `[订阅${subId}] 第一次检查跳过，剩余次数${subscription.resetTimes}（保留给第二次检查）`
+                    `${subId} 第一次检查跳过（剩余${subscription.resetTimes}次，保留给第二次检查）`
                 );
                 return false;
             }
@@ -187,7 +199,7 @@ export class ResetService {
             // 第二次检查点：重置次数>=1就重置（兜底策略，最大化利用）
             if (subscription.resetTimes < 1) {
                 Logger.info(
-                    `[订阅${subId}] 第二次检查跳过，剩余次数${subscription.resetTimes}（次数已用完）`
+                    `${subId} 第二次检查跳过（剩余${subscription.resetTimes}次，次数已用完）`
                 );
                 return false;
             }
@@ -204,7 +216,7 @@ export class ResetService {
      * @returns {Promise<Object>} 处理结果（立即返回，不阻塞主流程）
      */
     async processSubscriptionWithDelay(subscription, resetType) {
-        const subId = subscription.id;
+        const subId = this.formatSubscriptionId(subscription);
         const cooldown = TimeUtils.checkCooldown(subscription.lastCreditReset);
 
         // 如果冷却已过，直接重置
@@ -216,30 +228,31 @@ export class ResetService {
         const cooldownEndTime = TimeUtils.getCooldownEndTime(subscription.lastCreditReset);
         const now = Date.now();
         const delayMs = Math.max(0, cooldownEndTime - now + 1000); // 额外等待1秒缓冲
+        const lastReset = TimeUtils.formatDateTime(new Date(subscription.lastCreditReset));
 
         Logger.info(
-            `[订阅${subId}] 冷却中，已调度延迟重置，将在 ${TimeUtils.formatDateTime(cooldownEndTime)} 执行 ` +
-            `（${Math.ceil(delayMs / 1000)}秒后）`
+            `${subId} 冷却中（上次重置: ${lastReset}），已调度延迟重置，` +
+            `将在 ${TimeUtils.formatDateTime(cooldownEndTime)} 执行（${cooldown.formatted}后）`
         );
 
         // 创建后台延迟定时器（不阻塞主流程）
         const timerId = setTimeout(async () => {
-            Logger.info(`[订阅${subId}] 开始执行延迟重置`);
+            Logger.info(`${subId} 开始执行延迟重置`);
 
             try {
                 // 重新获取最新的订阅信息（避免使用过期数据）
                 const latestSubscriptions = await this.apiClient.getSubscriptions();
-                const latestSubscription = latestSubscriptions.find(s => s.id === subId);
+                const latestSubscription = latestSubscriptions.find(s => s.id === subscription.id);
 
                 if (!latestSubscription) {
-                    Logger.error(`[订阅${subId}] 订阅不存在，取消延迟重置`);
-                    this.timerManager.clear(`delayed-reset-${subId}`);
+                    Logger.error(`${subId} 订阅不存在，取消延迟重置`);
+                    this.timerManager.clear(`delayed-reset-${subscription.id}`);
                     return;
                 }
 
                 // 使用最新数据执行重置
                 const result = await this.processSubscription(latestSubscription, resetType);
-                this.timerManager.clear(`delayed-reset-${subId}`);
+                this.timerManager.clear(`delayed-reset-${subscription.id}`);
 
                 // 发送延迟重置结果通知
                 await this.notifierManager.notify({
@@ -256,8 +269,8 @@ export class ResetService {
                     details: [result],
                 });
             } catch (error) {
-                Logger.error(`[订阅${subId}] 延迟重置失败`, error);
-                this.timerManager.clear(`delayed-reset-${subId}`);
+                Logger.error(`${subId} 延迟重置失败`, error);
+                this.timerManager.clear(`delayed-reset-${subscription.id}`);
 
                 // 发送失败通知
                 await this.notifierManager.notify({
@@ -283,11 +296,11 @@ export class ResetService {
         }, delayMs);
 
         // 保存定时器引用
-        this.timerManager.set(`delayed-reset-${subId}`, timerId);
+        this.timerManager.set(`delayed-reset-${subscription.id}`, timerId);
 
         // 立即返回 SCHEDULED 状态，不等待定时器执行
         return {
-            subscriptionId: subId,
+            subscriptionId: subscription.id,
             subscriptionName: subscription.subscriptionPlanName,
             status: RESET_STATUS.SCHEDULED,
             message: `已调度延迟重置，将在 ${TimeUtils.formatDateTime(cooldownEndTime)} 执行`,
@@ -302,11 +315,11 @@ export class ResetService {
      * @returns {Promise<Object>} 处理结果
      */
     async processSubscription(subscription, resetType) {
-        const subId = subscription.id;
+        const subId = this.formatSubscriptionId(subscription);
         const creditPercent = (subscription.currentCredits / subscription.subscriptionPlan.creditLimit) * 100;
 
         const detail = {
-            subscriptionId: subId,
+            subscriptionId: subscription.id,
             subscriptionName: subscription.subscriptionPlanName,
             status: RESET_STATUS.SUCCESS,
             beforeCredits: subscription.currentCredits,
@@ -320,41 +333,65 @@ export class ResetService {
             // 直接重置策略（无论余额多少）
             if (resetType === RESET_TYPES.FIRST) {
                 Logger.info(
-                    `[订阅${subId}] 执行第一次检查点重置（重置次数完整，当前余额 ${creditPercent.toFixed(1)}%）`
+                    `${subId} 执行第一次检查点重置（剩余${subscription.resetTimes}次，当前余额 ${creditPercent.toFixed(1)}%）`
                 );
             } else {
                 Logger.info(
-                    `[订阅${subId}] 执行第二次检查点重置（剩余次数 ${subscription.resetTimes}，当前余额 ${creditPercent.toFixed(1)}%）`
+                    `${subId} 执行第二次检查点重置（剩余${subscription.resetTimes}次，当前余额 ${creditPercent.toFixed(1)}%）`
                 );
             }
 
             // 执行重置
-            await this.apiClient.resetCredits(subId);
+            await this.apiClient.resetCredits(subscription.id);
 
             // 等待API更新（使用配置值）
             await new Promise(resolve => setTimeout(resolve, config.resetVerificationWaitMs));
 
             // 重新获取订阅信息验证
             const updatedSubscriptions = await this.apiClient.getSubscriptions();
-            const updated = updatedSubscriptions.find(s => s.id === subId);
+            const updated = updatedSubscriptions.find(s => s.id === subscription.id);
 
             if (updated) {
                 detail.afterCredits = updated.currentCredits;
                 detail.afterResetTimes = updated.resetTimes;
 
-                Logger.success(
-                    `[订阅${subId}] 重置成功: ` +
-                    `${detail.beforeCredits.toFixed(2)} → ${detail.afterCredits.toFixed(2)} credits, ` +
-                    `resetTimes ${detail.beforeResetTimes} → ${detail.afterResetTimes}`
-                );
+                // 检测无效重置（API返回成功但数据未变化）
+                const creditsUnchanged = Math.abs(detail.beforeCredits - detail.afterCredits) < 0.01;
+                const resetTimesUnchanged = detail.beforeResetTimes === detail.afterResetTimes;
 
-                detail.message = '重置成功';
+                if (creditsUnchanged && resetTimesUnchanged) {
+                    // 无效重置：通常发生在FREE订阅或其他API限制
+                    Logger.warn(
+                        `${subId} API调用成功但数据未变化: ` +
+                        `${detail.beforeCredits.toFixed(2)} credits, resetTimes ${detail.beforeResetTimes} ` +
+                        `（可能是FREE订阅或其他限制）`
+                    );
+                    detail.status = RESET_STATUS.SKIPPED;
+                    detail.message = 'API返回成功但数据未变化';
+                } else if (detail.beforeResetTimes < detail.afterResetTimes) {
+                    // 检测到跨天刷新（resetTimes增加）
+                    Logger.success(
+                        `${subId} 重置成功: ` +
+                        `${detail.beforeCredits.toFixed(2)} → ${detail.afterCredits.toFixed(2)} credits, ` +
+                        `resetTimes ${detail.beforeResetTimes} → ${detail.afterResetTimes} ` +
+                        `（检测到跨天刷新，次数已恢复）`
+                    );
+                    detail.message = '重置成功（跨天刷新）';
+                } else {
+                    // 正常重置
+                    Logger.success(
+                        `${subId} 重置成功: ` +
+                        `${detail.beforeCredits.toFixed(2)} → ${detail.afterCredits.toFixed(2)} credits, ` +
+                        `resetTimes ${detail.beforeResetTimes} → ${detail.afterResetTimes}`
+                    );
+                    detail.message = '重置成功';
+                }
             } else {
                 detail.message = '重置成功（未能验证结果）';
             }
 
         } catch (error) {
-            Logger.error(`[订阅${subId}] 重置失败`, error);
+            Logger.error(`${subId} 重置失败`, error);
             detail.status = RESET_STATUS.FAILED;
             detail.message = error.message;
             detail.error = error.message;
