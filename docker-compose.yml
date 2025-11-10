@@ -24,16 +24,6 @@ services:
       # 如果需要动态修改配置，可以挂载 .env
       # - ./.env:/app/.env:ro
 
-    # 资源限制（可选）
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'      # 最多使用 0.5 核 CPU
-          memory: 256M     # 最多使用 256MB 内存
-        reservations:
-          cpus: '0.1'      # 保留 0.1 核 CPU
-          memory: 128M     # 保留 128MB 内存
-
     # 日志配置
     logging:
       driver: "json-file"
