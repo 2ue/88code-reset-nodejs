@@ -182,24 +182,37 @@ async function sendStartupNotification(resetServices) {
             failed: 0,
             skipped: 0,
             scheduled: 0,
-            details: allSubscriptions.map(sub => ({
-                subscriptionId: sub.id,
-                subscriptionName: sub.subscriptionPlanName,
-                status: 'ACTIVE',
-                message: `余额: ${(sub.currentCredits / sub.subscriptionPlan.creditLimit * 100).toFixed(1)}%, 剩余次数: ${sub.resetTimes}`,
-                beforeCredits: sub.currentCredits,
-                afterCredits: sub.currentCredits,
-            }))
+            details: allSubscriptions.map(sub => {
+                const isPAYGO = sub.subscriptionPlanName === 'PAYGO' ||
+                               sub.subscriptionPlan?.subscriptionName === 'PAYGO' ||
+                               sub.subscriptionPlan?.planType === 'PAYGO' ||
+                               sub.subscriptionPlan?.planType === 'PAY_PER_USE';
+
+                let message = `余额: ${sub.currentCredits.toFixed(2)}`;
+                if (!isPAYGO) {
+                    message += `, 剩余次数: ${sub.resetTimes}`;
+                }
+
+                return {
+                    subscriptionId: sub.id,
+                    subscriptionName: sub.subscriptionPlanName,
+                    status: 'ACTIVE',
+                    message,
+                    beforeCredits: sub.currentCredits,
+                    afterCredits: sub.currentCredits,
+                };
+            })
         };
 
-        // 发送到所有服务的通知管理器
-        for (const service of resetServices) {
-            if (service.notifierManager && service.notifierManager.isEnabled()) {
-                await service.notifierManager.notify(notificationData);
-            }
-        }
+        // 只发送一次通知（使用第一个配置了通知器的服务）
+        const notifierService = resetServices.find(service =>
+            service.notifierManager && service.notifierManager.isEnabled()
+        );
 
-        Logger.success('启动通知发送成功');
+        if (notifierService) {
+            await notifierService.notifierManager.notify(notificationData);
+            Logger.success('启动通知发送成功');
+        }
     } catch (error) {
         Logger.error('发送启动通知失败', error);
         // 不阻塞启动流程
