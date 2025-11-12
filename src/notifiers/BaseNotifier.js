@@ -35,7 +35,15 @@ export class BaseNotifier {
      */
     formatResetResult(result) {
         const { resetType, success, failed, skipped, scheduled, details } = result;
-        const resetTypeName = resetType === 'FIRST' ? '第一次检查点' : '第二次检查点';
+
+        // 处理启动通知
+        if (resetType === 'STARTUP') {
+            return this.formatStartupMessage(result);
+        }
+
+        const resetTypeName = resetType === 'FIRST' ? '第一次检查点' :
+                             resetType === 'SECOND' ? '第二次检查点' :
+                             resetType.includes('DELAYED') ? '延迟重置' : '重置';
 
         let message = `📊 88code 重置通知\n\n`;
         message += `⏰ 检查点: ${resetTypeName}\n`;
@@ -61,6 +69,35 @@ export class BaseNotifier {
                 } else if (detail.status === 'SCHEDULED') {
                     message += `   ${detail.message}\n`;
                 } else if (detail.message) {
+                    message += `   ${detail.message}\n`;
+                }
+            });
+        }
+
+        return message;
+    }
+
+    /**
+     * 格式化启动通知消息
+     * @param {Object} result - 启动通知数据
+     * @returns {string} 格式化后的消息
+     */
+    formatStartupMessage(result) {
+        const { details, totalSubscriptions } = result;
+        const now = new Date();
+        const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+
+        let message = `🚀 88code 服务启动成功\n\n`;
+        message += `⏰ 启动时间: ${timeStr}\n`;
+        message += `📊 订阅总数: ${totalSubscriptions}\n`;
+        message += `\n`;
+
+        // 添加订阅详细信息
+        if (details && details.length > 0) {
+            message += `📝 订阅状态:\n`;
+            details.forEach((detail, index) => {
+                message += `${index + 1}. ${detail.subscriptionName}\n`;
+                if (detail.message) {
                     message += `   ${detail.message}\n`;
                 }
             });

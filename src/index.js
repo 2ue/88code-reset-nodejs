@@ -84,11 +84,17 @@ async function main() {
         // 保存引用以便清理
         resetServiceWrapper = resetService;
 
+        // 初始化通知管理器
+        await resetService.initialize();
+
         // 启动调度器
         scheduler = new Scheduler(resetService, fileStorage);
         await scheduler.start();
 
         Logger.success('服务启动成功！');
+
+        // 发送启动成功通知（如果配置了通知器）
+        await sendStartupNotification(resetServices);
 
     } catch (error) {
         Logger.error('启动失败', error);
@@ -120,6 +126,84 @@ async function runTest() {
     }
 
     Logger.info('========== 测试完成 ==========');
+}
+
+/**
+ * 发送启动成功通知
+ * @param {Array} resetServices - 重置服务数组
+ */
+async function sendStartupNotification(resetServices) {
+    try {
+        // 检查是否有任何服务配置了通知器
+        const hasNotifier = resetServices.some(service =>
+            service.notifierManager && service.notifierManager.isEnabled()
+        );
+
+        if (!hasNotifier) {
+            Logger.debug('未配置通知器，跳过启动通知');
+            return;
+        }
+
+        Logger.info('发送启动成功通知...');
+
+        // 获取当前时区时间
+        const now = new Date();
+        const configTime = now.toLocaleString('zh-CN', {
+            timeZone: config.timezone,
+            hour12: false,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
+        // 收集所有订阅信息
+        const allSubscriptions = [];
+        for (const service of resetServices) {
+            try {
+                const subs = await service.apiClient.getSubscriptions();
+                allSubscriptions.push(...subs);
+            } catch (error) {
+                Logger.warn('获取订阅信息失败', error.message);
+            }
+        }
+
+        // 构造通知数据
+        const notificationData = {
+            resetType: 'STARTUP',
+            startTime: now.getTime(),
+            endTime: now.getTime(),
+            totalDuration: 0,
+            totalSubscriptions: allSubscriptions.length,
+            eligible: allSubscriptions.length,
+            success: allSubscriptions.length,
+            failed: 0,
+            skipped: 0,
+            scheduled: 0,
+            details: allSubscriptions.map(sub => ({
+                subscriptionId: sub.id,
+                subscriptionName: sub.subscriptionPlanName,
+                status: 'ACTIVE',
+                message: `余额: ${(sub.currentCredits / sub.subscriptionPlan.creditLimit * 100).toFixed(1)}%, 剩余次数: ${sub.resetTimes}`,
+                beforeCredits: sub.currentCredits,
+                afterCredits: sub.currentCredits,
+            }))
+        };
+
+        // 发送到所有服务的通知管理器
+        for (const service of resetServices) {
+            if (service.notifierManager && service.notifierManager.isEnabled()) {
+                await service.notifierManager.notify(notificationData);
+            }
+        }
+
+        Logger.success('启动通知发送成功');
+    } catch (error) {
+        Logger.error('发送启动通知失败', error);
+        // 不阻塞启动流程
+    }
 }
 
 // 优雅关闭

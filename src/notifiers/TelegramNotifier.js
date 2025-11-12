@@ -82,8 +82,34 @@ export class TelegramNotifier extends BaseNotifier {
      * 格式化消息为 Telegram HTML 格式
      */
     formatResetResult(result) {
-        const { resetType, success, failed, skipped, scheduled, details } = result;
-        const resetTypeName = resetType === 'FIRST' ? '第一次检查点' : '第二次检查点';
+        const { resetType, success, failed, skipped, scheduled, details, totalSubscriptions } = result;
+
+        // 处理启动通知
+        if (resetType === 'STARTUP') {
+            const now = new Date();
+            const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+
+            let message = `<b>🚀 88code 服务启动成功</b>\n\n`;
+            message += `⏰ 启动时间: <b>${timeStr}</b>\n`;
+            message += `📊 订阅总数: <b>${totalSubscriptions}</b>\n`;
+            message += `\n`;
+
+            if (details && details.length > 0) {
+                message += `<b>📝 订阅状态:</b>\n`;
+                details.forEach((detail, index) => {
+                    message += `${index + 1}. ${this.escapeHtml(detail.subscriptionName)}\n`;
+                    if (detail.message) {
+                        message += `   ${this.escapeHtml(detail.message)}\n`;
+                    }
+                });
+            }
+
+            return message;
+        }
+
+        const resetTypeName = resetType === 'FIRST' ? '第一次检查点' :
+                             resetType === 'SECOND' ? '第二次检查点' :
+                             resetType.includes('DELAYED') ? '延迟重置' : '重置';
 
         let message = `<b>📊 88code 重置通知</b>\n\n`;
         message += `⏰ 检查点: <b>${resetTypeName}</b>\n`;
