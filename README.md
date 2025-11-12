@@ -26,7 +26,7 @@
 
 **重要提示**：
 
-1. **依赖官方 API**：本工具依赖 88code 官方 API 接口（`https://api.88code.com`），所有重置操作均通过官方接口执行
+1. **依赖官方 API**：本工具依赖 88code 官方 API 接口（`https://www.88code.org`），所有重置操作均通过官方接口执行
 2. **源码审查**：重置接口的可靠性和安全性需要您自行审查源码验证，源码完全开放：[src/core/APIClient.js](./src/core/APIClient.js)
 3. **使用风险**：本人不对使用本工具导致的任何结果负责，包括但不限于：
    - 额度重置失败
@@ -105,13 +105,9 @@
 # 1. 拉取镜像
 docker pull huby11111/88code-reset-nodejs:latest
 
-# 2. 创建 .env 文件
-cat > .env << EOF
-API_KEYS=88_your_key_here,88_another_key_here
-API_BASE_URL=https://api.88code.com
-NODE_ENV=production
-TZ=Asia/Shanghai
-EOF
+# 2. 配置 API Key
+cp .env.example .env
+vim .env  # 修改 API_KEYS 为你的真实密钥
 
 # 3. 运行容器
 docker run -d \
@@ -203,10 +199,19 @@ pm2 status
 
 ### 必填配置
 
+**推荐方式：复制模板文件**
+
+```bash
+cp .env.example .env
+vim .env  # 修改 API_KEYS 为你的真实密钥
+```
+
+**核心配置项：**
+
 ```env
 # API密钥（必填，多个用逗号分隔）
 # 格式: 88_xxxxxx (40+字符)
-API_KEYS=88_xxx,88_yyy
+API_KEYS=88_your_api_key_here_replace_with_real_key
 ```
 
 ### 重置策略配置
@@ -278,13 +283,9 @@ if (resetTimes < 1) {
 # 1. 拉取镜像
 docker pull huby11111/88code-reset-nodejs:latest
 
-# 2. 配置环境变量
-cat > .env << EOF
-API_KEYS=88_your_key_here
-FIRST_RESET_TIME=18:55
-SECOND_RESET_TIME=23:58
-TIMEZONE=Asia/Shanghai
-EOF
+# 2. 配置 API Key
+cp .env.example .env
+vim .env  # 修改 API_KEYS 为你的真实密钥
 
 # 3. 运行容器
 docker run -d \

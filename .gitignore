@@ -124,6 +124,14 @@ temp/
 *.tar.gz
 *.rar
 
+# 图片文件（避免截图泄漏敏感信息）
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.webp
+
 # 调试文件
 debug.log
 error.log
