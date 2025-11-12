@@ -38,9 +38,6 @@ export class Scheduler {
     async start() {
         Logger.info('========== 调度器启动 ==========');
 
-        // 初始化 ResetService（包含通知模块）
-        await this.resetService.initialize();
-
         // 启动时清理一次旧历史文件
         if (this.fileStorage) {
             Logger.info('清理旧历史文件...');
