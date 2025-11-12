@@ -188,18 +188,26 @@ async function sendStartupNotification(resetServices) {
                                sub.subscriptionPlan?.planType === 'PAYGO' ||
                                sub.subscriptionPlan?.planType === 'PAY_PER_USE';
 
-                let message = `余额: ${sub.currentCredits.toFixed(2)}`;
+                // 余额显示格式：剩余/限额 (百分比%)
+                const percent = (sub.currentCredits / sub.subscriptionPlan.creditLimit * 100).toFixed(1);
+                const creditDisplay = `${sub.currentCredits.toFixed(2)}/${sub.subscriptionPlan.creditLimit.toFixed(2)} (${percent}%)`;
+
+                let message = `余额: ${creditDisplay}`;
                 if (!isPAYGO) {
                     message += `, 剩余次数: ${sub.resetTimes}`;
                 }
+                message += `\n   到期: ${sub.endDate}`;
 
                 return {
                     subscriptionId: sub.id,
-                    subscriptionName: sub.subscriptionPlanName,
-                    status: 'ACTIVE',
+                    subscriptionName: `${sub.subscriptionPlanName} (${sub.billingCycleDesc || sub.billingCycle})`,
+                    subscriptionStatus: sub.subscriptionStatus,
+                    status: sub.subscriptionStatus,
                     message,
                     beforeCredits: sub.currentCredits,
                     afterCredits: sub.currentCredits,
+                    creditLimit: sub.subscriptionPlan.creditLimit,
+                    endDate: sub.endDate,
                 };
             })
         };

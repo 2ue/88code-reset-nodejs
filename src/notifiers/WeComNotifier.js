@@ -78,25 +78,7 @@ export class WeComNotifier extends BaseNotifier {
 
         // 处理启动通知
         if (resetType === 'STARTUP') {
-            const now = new Date();
-            const timeStr = now.toLocaleString('zh-CN', { hour12: false });
-
-            let message = `## 🚀 88code 服务启动成功\n\n`;
-            message += `> ⏰ 启动时间: <font color="info">${timeStr}</font>\n`;
-            message += `> 📊 订阅总数: <font color="info">${totalSubscriptions}</font>\n`;
-            message += `\n`;
-
-            if (details && details.length > 0) {
-                message += `### 📝 订阅状态\n`;
-                details.forEach((detail, index) => {
-                    message += `${index + 1}. ${detail.subscriptionName}\n`;
-                    if (detail.message) {
-                        message += `   > ${detail.message}\n`;
-                    }
-                });
-            }
-
-            return message;
+            return this.formatStartupMessage(result);
         }
 
         const resetTypeName = resetType === 'FIRST' ? '第一次检查点' :
@@ -129,6 +111,49 @@ export class WeComNotifier extends BaseNotifier {
                 } else if (detail.status === 'SCHEDULED') {
                     message += `   > ${detail.message}\n`;
                 } else if (detail.message) {
+                    message += `   > ${detail.message}\n`;
+                }
+            });
+        }
+
+        return message;
+    }
+
+    /**
+     * 格式化启动通知消息（Markdown格式）
+     * @param {Object} result - 启动通知数据
+     * @returns {string} 格式化后的消息
+     */
+    formatStartupMessage(result) {
+        const { details, totalSubscriptions } = result;
+        const now = new Date();
+        const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+
+        // 按状态分组订阅
+        const activeSubscriptions = details.filter(d => d.subscriptionStatus === '活跃中');
+        const inactiveSubscriptions = details.filter(d => d.subscriptionStatus !== '活跃中');
+
+        let message = `## 🚀 88code 服务启动成功\n\n`;
+        message += `> ⏰ 启动时间: <font color="info">${timeStr}</font>\n`;
+        message += `> 📊 订阅总数: <font color="info">${totalSubscriptions}</font>\n\n`;
+
+        // 活跃中订阅
+        if (activeSubscriptions.length > 0) {
+            message += `### 📊 活跃中订阅\n`;
+            activeSubscriptions.forEach((detail, index) => {
+                message += `${index + 1}. ${detail.subscriptionName}\n`;
+                if (detail.message) {
+                    message += `   > ${detail.message}\n`;
+                }
+            });
+        }
+
+        // 已过期订阅
+        if (inactiveSubscriptions.length > 0) {
+            message += `\n### ⏸️ 已过期订阅\n`;
+            inactiveSubscriptions.forEach((detail, index) => {
+                message += `${activeSubscriptions.length + index + 1}. ${detail.subscriptionName}\n`;
+                if (detail.message) {
                     message += `   > ${detail.message}\n`;
                 }
             });

@@ -163,11 +163,17 @@ export class ResetService {
 
         // P1: 订阅类型检查
         if (subscription.subscriptionPlan.planType !== SUBSCRIPTION_TYPES.MONTHLY) {
-            Logger.debug(`${subId} 非MONTHLY订阅，已跳过`);
+            Logger.debug(`${subId} 非MONTHLY套餐类型，已跳过`);
             return false;
         }
 
-        // P1: 激活状态检查
+        // P1.5: 付费周期检查 - 只允许月付订阅
+        if (subscription.billingCycle !== 'monthly') {
+            Logger.info(`${subId} 非月付订阅（${subscription.billingCycleDesc || subscription.billingCycle}），已跳过`);
+            return false;
+        }
+
+        // P1.6: 激活状态检查
         if (!subscription.isActive) {
             Logger.debug(`${subId} 订阅未激活，已跳过`);
             return false;

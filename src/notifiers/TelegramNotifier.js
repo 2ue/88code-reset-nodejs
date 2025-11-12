@@ -86,25 +86,7 @@ export class TelegramNotifier extends BaseNotifier {
 
         // 处理启动通知
         if (resetType === 'STARTUP') {
-            const now = new Date();
-            const timeStr = now.toLocaleString('zh-CN', { hour12: false });
-
-            let message = `<b>🚀 88code 服务启动成功</b>\n\n`;
-            message += `⏰ 启动时间: <b>${timeStr}</b>\n`;
-            message += `📊 订阅总数: <b>${totalSubscriptions}</b>\n`;
-            message += `\n`;
-
-            if (details && details.length > 0) {
-                message += `<b>📝 订阅状态:</b>\n`;
-                details.forEach((detail, index) => {
-                    message += `${index + 1}. ${this.escapeHtml(detail.subscriptionName)}\n`;
-                    if (detail.message) {
-                        message += `   ${this.escapeHtml(detail.message)}\n`;
-                    }
-                });
-            }
-
-            return message;
+            return this.formatStartupMessage(result);
         }
 
         const resetTypeName = resetType === 'FIRST' ? '第一次检查点' :
@@ -135,6 +117,49 @@ export class TelegramNotifier extends BaseNotifier {
                 } else if (detail.status === 'SCHEDULED') {
                     message += `   ${this.escapeHtml(detail.message)}\n`;
                 } else if (detail.message) {
+                    message += `   ${this.escapeHtml(detail.message)}\n`;
+                }
+            });
+        }
+
+        return message;
+    }
+
+    /**
+     * 格式化启动通知消息（HTML格式）
+     * @param {Object} result - 启动通知数据
+     * @returns {string} 格式化后的消息
+     */
+    formatStartupMessage(result) {
+        const { details, totalSubscriptions } = result;
+        const now = new Date();
+        const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+
+        // 按状态分组订阅
+        const activeSubscriptions = details.filter(d => d.subscriptionStatus === '活跃中');
+        const inactiveSubscriptions = details.filter(d => d.subscriptionStatus !== '活跃中');
+
+        let message = `<b>🚀 88code 服务启动成功</b>\n\n`;
+        message += `⏰ 启动时间: <b>${timeStr}</b>\n`;
+        message += `📊 订阅总数: <b>${totalSubscriptions}</b>\n\n`;
+
+        // 活跃中订阅
+        if (activeSubscriptions.length > 0) {
+            message += `<b>📊 活跃中订阅:</b>\n`;
+            activeSubscriptions.forEach((detail, index) => {
+                message += `${index + 1}. ${this.escapeHtml(detail.subscriptionName)}\n`;
+                if (detail.message) {
+                    message += `   ${this.escapeHtml(detail.message)}\n`;
+                }
+            });
+        }
+
+        // 已过期订阅
+        if (inactiveSubscriptions.length > 0) {
+            message += `\n<b>⏸️ 已过期订阅:</b>\n`;
+            inactiveSubscriptions.forEach((detail, index) => {
+                message += `${activeSubscriptions.length + index + 1}. ${this.escapeHtml(detail.subscriptionName)}\n`;
+                if (detail.message) {
                     message += `   ${this.escapeHtml(detail.message)}\n`;
                 }
             });

@@ -87,16 +87,30 @@ export class BaseNotifier {
         const now = new Date();
         const timeStr = now.toLocaleString('zh-CN', { hour12: false });
 
+        // 按状态分组订阅
+        const activeSubscriptions = details.filter(d => d.subscriptionStatus === '活跃中');
+        const inactiveSubscriptions = details.filter(d => d.subscriptionStatus !== '活跃中');
+
         let message = `🚀 88code 服务启动成功\n\n`;
         message += `⏰ 启动时间: ${timeStr}\n`;
-        message += `📊 订阅总数: ${totalSubscriptions}\n`;
-        message += `\n`;
+        message += `📊 订阅总数: ${totalSubscriptions}\n\n`;
 
-        // 添加订阅详细信息
-        if (details && details.length > 0) {
-            message += `📝 订阅状态:\n`;
-            details.forEach((detail, index) => {
+        // 活跃中订阅
+        if (activeSubscriptions.length > 0) {
+            message += `📊 活跃中订阅:\n`;
+            activeSubscriptions.forEach((detail, index) => {
                 message += `${index + 1}. ${detail.subscriptionName}\n`;
+                if (detail.message) {
+                    message += `   ${detail.message}\n`;
+                }
+            });
+        }
+
+        // 已过期订阅
+        if (inactiveSubscriptions.length > 0) {
+            message += `\n⏸️ 已过期订阅:\n`;
+            inactiveSubscriptions.forEach((detail, index) => {
+                message += `${activeSubscriptions.length + index + 1}. ${detail.subscriptionName}\n`;
                 if (detail.message) {
                     message += `   ${detail.message}\n`;
                 }
