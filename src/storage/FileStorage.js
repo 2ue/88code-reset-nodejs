@@ -6,6 +6,7 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import Logger from '../utils/Logger.js';
+import TimeUtils from '../utils/TimeUtils.js';
 import config from '../config.js';
 
 export class FileStorage {
@@ -26,7 +27,7 @@ export class FileStorage {
         if (!config.enableHistory) return;
 
         try {
-            const filename = `reset-${new Date().toISOString().split('T')[0]}.json`;
+            const filename = `reset-${TimeUtils.getTodayDateString()}.json`;
             const filepath = join(this.dataDir, filename);
 
             // 读取现有记录
@@ -39,7 +40,7 @@ export class FileStorage {
             }
 
             history.push({
-                timestamp: new Date().toISOString(),
+                timestamp: TimeUtils.formatDateTime(TimeUtils.nowInApiTimezone()),
                 ...result,
             });
 

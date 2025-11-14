@@ -6,12 +6,17 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import { COOLDOWN_PERIOD } from '../constants.js';
 import config from '../config.js';
 
-// 扩展 dayjs 时区支持
+// Dayjs 插件
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(customParseFormat);
+
+const API_TIMEZONE = 'Asia/Shanghai';
+const API_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 export class TimeUtils {
     /**
@@ -29,10 +34,9 @@ export class TimeUtils {
         }
 
         try {
-            const lastResetTime = new Date(lastResetTimeStr).getTime();
+            const lastResetMoment = TimeUtils.parseApiDate(lastResetTimeStr);
 
-            if (isNaN(lastResetTime)) {
-                // 解析失败，假设已过冷却期
+            if (!lastResetMoment) {
                 return {
                     passed: true,
                     remaining: 0,
@@ -40,8 +44,8 @@ export class TimeUtils {
                 };
             }
 
-            const now = Date.now();
-            const elapsed = now - lastResetTime;
+            const now = TimeUtils.nowInApiTimezone();
+            const elapsed = now.valueOf() - lastResetMoment.valueOf();
 
             if (elapsed >= COOLDOWN_PERIOD) {
                 return {
@@ -97,22 +101,15 @@ export class TimeUtils {
      */
     static formatDateTime(dateInput) {
         try {
-            const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+            const parsed = TimeUtils.parseApiDate(
+                dateInput ?? TimeUtils.nowInApiTimezone()
+            );
 
-            if (isNaN(date.getTime())) {
+            if (!parsed) {
                 return '无效日期';
             }
 
-            return date.toLocaleString('zh-CN', {
-                timeZone: config.timezone,
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false,
-            });
+            return parsed.format('YYYY-MM-DD HH:mm:ss');
         } catch (error) {
             return '格式化失败';
         }
@@ -124,7 +121,7 @@ export class TimeUtils {
      * @returns {string}
      */
     static getTodayDateString() {
-        return dayjs().tz(config.timezone).format('YYYY-MM-DD');
+        return TimeUtils.nowInApiTimezone().format('YYYY-MM-DD');
     }
 
     /**
@@ -199,16 +196,64 @@ export class TimeUtils {
         }
 
         try {
-            const lastResetTime = new Date(lastResetTimeStr).getTime();
+            const lastResetMoment = TimeUtils.parseApiDate(lastResetTimeStr);
 
-            if (isNaN(lastResetTime)) {
+            if (!lastResetMoment) {
                 return 0;
             }
 
-            return lastResetTime + COOLDOWN_PERIOD;
+            return lastResetMoment.valueOf() + COOLDOWN_PERIOD;
         } catch (error) {
             return 0;
         }
+    }
+
+    /**
+     * 获取 API 时区的当前时间
+     * @returns {dayjs.Dayjs}
+     */
+    static nowInApiTimezone() {
+        return dayjs().tz(API_TIMEZONE);
+    }
+
+    /**
+     * 解析 API 返回的时间或本地时间
+     * @param {Date|number|string|dayjs.Dayjs} dateInput
+     * @returns {dayjs.Dayjs|null}
+     */
+    static parseApiDate(dateInput) {
+        if (dateInput === null || dateInput === undefined || dateInput === '') {
+            return null;
+        }
+
+        if (dayjs.isDayjs(dateInput)) {
+            const converted = dateInput.tz(API_TIMEZONE);
+            return converted.isValid() ? converted : null;
+        }
+
+        if (dateInput instanceof Date || typeof dateInput === 'number') {
+            const parsed = dayjs(dateInput);
+            return parsed.isValid() ? parsed.tz(API_TIMEZONE) : null;
+        }
+
+        if (typeof dateInput === 'string') {
+            const value = dateInput.trim();
+            if (!value) {
+                return null;
+            }
+
+            const parsed = dayjs.tz(value, API_TIME_FORMAT, API_TIMEZONE, true);
+            if (parsed.isValid()) {
+                return parsed;
+            }
+
+            const fallback = dayjs(value);
+            if (fallback.isValid()) {
+                return fallback.tz(API_TIMEZONE);
+            }
+        }
+
+        return null;
     }
 }
 

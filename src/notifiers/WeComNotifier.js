@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import { BaseNotifier } from './BaseNotifier.js';
+import TimeUtils from '../utils/TimeUtils.js';
 
 export class WeComNotifier extends BaseNotifier {
     constructor(config) {
@@ -74,7 +75,7 @@ export class WeComNotifier extends BaseNotifier {
      * 格式化消息为企业微信 Markdown 格式
      */
     formatResetResult(result) {
-        const { resetType, success, failed, skipped, scheduled, details, totalSubscriptions } = result;
+        const { resetType, apiKeyMask, success, failed, skipped, scheduled, details, totalSubscriptions } = result;
 
         // 处理启动通知
         if (resetType === 'STARTUP') {
@@ -87,6 +88,9 @@ export class WeComNotifier extends BaseNotifier {
 
         let message = `## 📊 88code 重置通知\n\n`;
         message += `> ⏰ 检查点: <font color="info">${resetTypeName}</font>\n`;
+        if (apiKeyMask) {
+            message += `> 🔑 API Key: \`${apiKeyMask}\`\n`;
+        }
         message += `> ✅ 成功: <font color="info">${success}</font>\n`;
         message += `> ❌ 失败: <font color="warning">${failed}</font>\n`;
         message += `> ⏭️ 跳过: <font color="comment">${skipped}</font>\n`;
@@ -126,8 +130,7 @@ export class WeComNotifier extends BaseNotifier {
      */
     formatStartupMessage(result) {
         const { details, totalSubscriptions } = result;
-        const now = new Date();
-        const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+        const timeStr = TimeUtils.formatDateTime(TimeUtils.nowInApiTimezone());
 
         // 按状态分组订阅
         const activeSubscriptions = details.filter(d => d.subscriptionStatus === '活跃中');

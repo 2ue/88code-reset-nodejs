@@ -7,8 +7,13 @@ import winston from 'winston';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import config from '../config.js';
+import TimeUtils from './TimeUtils.js';
 
-const { combine, timestamp, printf, colorize } = winston.format;
+const { combine, printf, colorize } = winston.format;
+const apiTimestamp = winston.format((info) => {
+    info.timestamp = TimeUtils.nowInApiTimezone().format('YYYY-MM-DD HH:mm:ss');
+    return info;
+});
 
 // 确保日志目录存在
 if (!existsSync(config.logDir)) {
@@ -31,7 +36,7 @@ const customFormat = printf(({ level, message, timestamp, ...metadata }) => {
 const logger = winston.createLogger({
     level: config.logLevel,
     format: combine(
-        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        apiTimestamp(),
         customFormat
     ),
     transports: [],
@@ -41,7 +46,7 @@ const logger = winston.createLogger({
 logger.add(new winston.transports.Console({
     format: combine(
         colorize(),
-        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        apiTimestamp(),
         customFormat
     ),
 }));
@@ -64,7 +69,7 @@ if (config.logFileEnabled) {
     }));
 
     // 按日期分割的日志
-    const today = new Date().toISOString().split('T')[0];
+    const today = TimeUtils.nowInApiTimezone().format('YYYY-MM-DD');
     logger.add(new winston.transports.File({
         filename: join(config.logDir, `reset-${today}.log`),
         maxsize: config.logMaxSize * 1024 * 1024,

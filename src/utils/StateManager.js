@@ -7,6 +7,7 @@ import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import Logger from './Logger.js';
+import TimeUtils from './TimeUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -79,7 +80,7 @@ class StateManager {
      * 获取今天日期 (YYYY-MM-DD)
      */
     getTodayDate() {
-        return new Date().toISOString().split('T')[0];
+        return TimeUtils.getTodayDateString();
     }
 
     /**
@@ -98,7 +99,8 @@ class StateManager {
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
         if (lastExecution) {
-            Logger.info(`今天已执行过${resetType}重置 (${lastExecution.timestamp})`);
+            const formatted = TimeUtils.formatDateTime(lastExecution.timestamp);
+            Logger.info(`今天已执行过${resetType}重置 (${formatted})`);
             return true;
         }
 
@@ -122,7 +124,7 @@ class StateManager {
             date: today,
             type: resetType,
             status: 'success',
-            timestamp: new Date().toISOString(),
+            timestamp: TimeUtils.nowInApiTimezone().toDate().toISOString(),
             result
         });
 
@@ -160,7 +162,7 @@ class StateManager {
             date: this.getTodayDate(),
             type: resetType,
             status: 'failure',
-            timestamp: new Date().toISOString(),
+            timestamp: TimeUtils.nowInApiTimezone().toDate().toISOString(),
             error: {
                 message: error.message,
                 stack: error.stack

@@ -100,6 +100,20 @@ describe('TimeUtils - Cooldown 检查', () => {
       assert.strictEqual(endTime, 0, `Should return 0 for: ${input}`);
     }
   });
+
+  it('应该把无时区的 API 时间视为上海时间', () => {
+    const apiTime = '2025-11-14 14:09:09';
+    const mockNow = dayjs('2025-11-14T20:09:09+08:00');
+    const originalNowFn = TimeUtils.nowInApiTimezone;
+
+    try {
+      TimeUtils.nowInApiTimezone = () => mockNow;
+      const cooldown = TimeUtils.checkCooldown(apiTime);
+      assert.strictEqual(cooldown.passed, true, '6 小时后应视为冷却结束');
+    } finally {
+      TimeUtils.nowInApiTimezone = originalNowFn;
+    }
+  });
 });
 
 describe('TimeUtils - 时间格式化', () => {
@@ -126,13 +140,18 @@ describe('TimeUtils - 时间格式化', () => {
     assert.ok(formatted.includes('30秒'), 'Should contain seconds only');
   });
 
-  it('应该格式化日期时间', () => {
+  it('应该格式化日期时间到上海时区', () => {
     const date = new Date('2025-11-07T12:30:00Z');
     const formatted = TimeUtils.formatDateTime(date);
 
-    // 格式应该是：YYYY/MM/DD HH:MM:SS（根据时区可能不同）
-    assert.ok(formatted.length > 0, 'Should return formatted string');
-    assert.ok(formatted.match(/\d{4}\/\d{2}\/\d{2}/), 'Should contain date');
+    assert.strictEqual(formatted, '2025-11-07 20:30:00');
+  });
+
+  it('应该保持无时区字符串与 API 一致', () => {
+    const apiTime = '2025-11-14 14:09:09';
+    const formatted = TimeUtils.formatDateTime(apiTime);
+
+    assert.strictEqual(formatted, apiTime);
   });
 
   it('应该处理无效日期', () => {

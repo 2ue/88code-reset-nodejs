@@ -5,6 +5,7 @@
 
 import axios from 'axios';
 import { BaseNotifier } from './BaseNotifier.js';
+import TimeUtils from '../utils/TimeUtils.js';
 
 export class TelegramNotifier extends BaseNotifier {
     constructor(config) {
@@ -40,7 +41,32 @@ export class TelegramNotifier extends BaseNotifier {
                 return false;
             }
         } catch (error) {
-            this.log('error', 'Telegram 初始化失败', error.message);
+            // 详细的错误诊断
+            const errorCode = error.code;
+            const errorMessage = error.message;
+
+            if (errorCode === 'ECONNABORTED' || errorMessage.includes('timeout')) {
+                this.log('error', `Telegram 初始化失败: 连接超时 (${error.message})`);
+                this.log('warn', '💡 提示: 无法连接到 api.telegram.org，请检查:');
+                this.log('warn', '  1. 网络连接是否正常');
+                this.log('warn', '  2. 是否需要配置代理（国内环境）');
+                this.log('warn', '  3. 防火墙是否阻止了连接');
+            } else if (errorCode === 'ENOTFOUND' || errorCode === 'EAI_AGAIN') {
+                this.log('error', `Telegram 初始化失败: DNS 解析失败 (${error.message})`);
+                this.log('warn', '💡 提示: 无法解析 api.telegram.org 域名，请检查 DNS 配置');
+            } else if (errorCode === 'ECONNREFUSED') {
+                this.log('error', `Telegram 初始化失败: 连接被拒绝 (${error.message})`);
+                this.log('warn', '💡 提示: Telegram API 服务不可达，可能是代理配置问题');
+            } else if (error.response) {
+                // HTTP 错误响应
+                this.log('error', `Telegram 初始化失败: HTTP ${error.response.status} - ${error.response.statusText}`);
+                if (error.response.status === 401) {
+                    this.log('warn', '💡 提示: Bot Token 无效或已过期，请检查 TELEGRAM_BOT_TOKEN 配置');
+                }
+            } else {
+                this.log('error', `Telegram 初始化失败: ${error.message}`);
+            }
+
             this.enabled = false;
             return false;
         }
@@ -82,7 +108,7 @@ export class TelegramNotifier extends BaseNotifier {
      * 格式化消息为 Telegram HTML 格式
      */
     formatResetResult(result) {
-        const { resetType, success, failed, skipped, scheduled, details, totalSubscriptions } = result;
+        const { resetType, apiKeyMask, success, failed, skipped, scheduled, details, totalSubscriptions } = result;
 
         // 处理启动通知
         if (resetType === 'STARTUP') {
@@ -95,6 +121,9 @@ export class TelegramNotifier extends BaseNotifier {
 
         let message = `<b>📊 88code 重置通知</b>\n\n`;
         message += `⏰ 检查点: <b>${resetTypeName}</b>\n`;
+        if (apiKeyMask) {
+            message += `🔑 API Key: <code>${this.escapeHtml(apiKeyMask)}</code>\n`;
+        }
         message += `✅ 成功: <b>${success}</b>\n`;
         message += `❌ 失败: <b>${failed}</b>\n`;
         message += `⏭️ 跳过: <b>${skipped}</b>\n`;
@@ -132,8 +161,7 @@ export class TelegramNotifier extends BaseNotifier {
      */
     formatStartupMessage(result) {
         const { details, totalSubscriptions } = result;
-        const now = new Date();
-        const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+        const timeStr = TimeUtils.formatDateTime(TimeUtils.nowInApiTimezone());
 
         // 按状态分组订阅
         const activeSubscriptions = details.filter(d => d.subscriptionStatus === '活跃中');

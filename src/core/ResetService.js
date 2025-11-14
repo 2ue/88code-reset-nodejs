@@ -19,6 +19,8 @@ export class ResetService {
         this.apiClient = apiClient;
         this.timerManager = new DynamicTimerManager(); // 使用定时器管理器
         this.notifierManager = new NotifierManager(config); // 通知管理器
+        // 保存脱敏的 API Key 用于通知标识
+        this.apiKeyMask = Logger.sanitizeAPIKey(apiClient.apiKey);
     }
 
     /**
@@ -48,6 +50,7 @@ export class ResetService {
 
         const result = {
             resetType,
+            apiKeyMask: this.apiKeyMask, // 添加 API Key 标识
             startTime: Date.now(),
             endTime: 0,
             totalDuration: 0,
@@ -153,7 +156,9 @@ export class ResetService {
      */
     isEligible(subscription, resetType) {
         const subId = this.formatSubscriptionId(subscription);
-        const lastReset = subscription.lastCreditReset ? TimeUtils.formatDateTime(new Date(subscription.lastCreditReset)) : '从未重置';
+        const lastReset = subscription.lastCreditReset
+            ? TimeUtils.formatDateTime(subscription.lastCreditReset)
+            : '从未重置';
 
         // P0: PAYGO保护（最高优先级）
         if (this.isPAYGO(subscription)) {
@@ -234,7 +239,7 @@ export class ResetService {
         const cooldownEndTime = TimeUtils.getCooldownEndTime(subscription.lastCreditReset);
         const now = Date.now();
         const delayMs = Math.max(0, cooldownEndTime - now + 1000); // 额外等待1秒缓冲
-        const lastReset = TimeUtils.formatDateTime(new Date(subscription.lastCreditReset));
+        const lastReset = TimeUtils.formatDateTime(subscription.lastCreditReset);
 
         Logger.info(
             `${subId} 冷却中（上次重置: ${lastReset}），已调度延迟重置，` +
@@ -263,6 +268,7 @@ export class ResetService {
                 // 发送延迟重置结果通知
                 await this.notifierManager.notify({
                     resetType: `${resetType}_DELAYED`,
+                    apiKeyMask: this.apiKeyMask, // 添加 API Key 标识
                     startTime: Date.now(),
                     endTime: Date.now(),
                     totalDuration: 0,
@@ -281,6 +287,7 @@ export class ResetService {
                 // 发送失败通知
                 await this.notifierManager.notify({
                     resetType: `${resetType}_DELAYED`,
+                    apiKeyMask: this.apiKeyMask, // 添加 API Key 标识
                     startTime: Date.now(),
                     endTime: Date.now(),
                     totalDuration: 0,

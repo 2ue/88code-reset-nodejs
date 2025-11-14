@@ -4,6 +4,7 @@
  */
 
 import Logger from '../utils/Logger.js';
+import TimeUtils from '../utils/TimeUtils.js';
 
 export class BaseNotifier {
     constructor(config) {
@@ -84,8 +85,7 @@ export class BaseNotifier {
      */
     formatStartupMessage(result) {
         const { details, totalSubscriptions } = result;
-        const now = new Date();
-        const timeStr = now.toLocaleString('zh-CN', { hour12: false });
+        const timeStr = TimeUtils.formatDateTime(TimeUtils.nowInApiTimezone());
 
         // 按状态分组订阅
         const activeSubscriptions = details.filter(d => d.subscriptionStatus === '活跃中');
