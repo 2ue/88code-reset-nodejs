@@ -70,8 +70,9 @@ export class RateLimiter {
                 return true;
             }
 
-            // 等待1秒后重试
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // 随机等待 100-300ms 后重试
+            const delay = Math.floor(Math.random() * 201) + 100;
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
 
         Logger.error(`速率限制超时: 等待${maxWaitMs}ms后仍无令牌可用`);
