@@ -222,7 +222,6 @@ docker-compose -f docker-compose.local.yml up -d
 - **基础镜像**: `node:18.20-alpine`
 - **包管理器**: `pnpm 7.30.1`
 - **镜像大小**: ~100MB（多阶段构建优化）
-- **时区**: `Asia/Shanghai`
 - **工作目录**: `/app`
 
 ### 构建架构
@@ -258,16 +257,6 @@ ls -la logs/
 docker exec -it 88code-reset sh
 ls -la /app/logs
 ```
-
-### 时区不正确
-
-```bash
-# 确认容器时区设置
-docker exec 88code-reset date
-docker exec 88code-reset cat /etc/localtime
-```
-
-应该显示 `CST`（中国标准时间）。
 
 ---
 

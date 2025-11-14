@@ -125,7 +125,6 @@ SECOND_RESET_TIME=23:56
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `NODE_ENV` | 运行环境 | `production` |
-| `TZ` | 时区 | `Asia/Shanghai` |
 | `FIRST_RESET_TIME` | 首次重置时间 | `18:55` |
 | `SECOND_RESET_TIME` | 二次重置时间 | `23:56` |
 | `COOLDOWN_HOURS` | 冷却期（小时） | `5` |
@@ -180,8 +179,7 @@ tar -czf backup.tar.gz logs/ data/
 
 A: 检查以下几点：
 1. 环境变量是否正确配置
-2. 时区设置是否为 `Asia/Shanghai`
-3. 查看日志确认调度器是否启动
+2. 查看日志确认调度器是否启动
 
 ### Q: 如何验证部署成功？
 
