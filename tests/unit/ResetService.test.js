@@ -28,6 +28,7 @@ import {
   createSecondCheckpointIneligible,
 } from '../fixtures/subscriptions.js';
 import { RESET_TYPES, RESET_STATUS } from '../../src/constants.js';
+import config from '../../src/config.js';
 
 /**
  * 创建测试用的 ResetService
@@ -54,7 +55,7 @@ function toAPIFormat(subscription) {
     subscriptionPlanName: subscription.plan_type,
     subscriptionPlan: {
       planType: subscription.plan_type,
-      subscriptionName: subscription.plan_type,
+      subscriptionName: subscription.subscriptionName || subscription.plan_type,
       creditLimit: 100,
     },
     isActive: subscription.active,
@@ -101,6 +102,51 @@ describe('ResetService - P0 PAYGO 保护', () => {
         `Should detect PAYGO: ${JSON.stringify(testCase)}`
       );
     }
+  });
+
+  it('应该跳过 PAY_PER_USE 订阅', async () => {
+    const { service, apiClient } = createTestResetService();
+
+    const payPerUse = createIdealSubscription({
+      plan_type: 'PAY_PER_USE',
+      subscription_id: 'ppu-001'
+    });
+
+    apiClient.setSubscriptions([
+      toAPIFormat(payPerUse),
+      toAPIFormat(createIdealSubscription()),
+    ]);
+
+    const result = await service.executeReset(RESET_TYPES.FIRST);
+
+    assert.strictEqual(result.eligible, 1, 'PAY_PER_USE 应被跳过');
+    assert.strictEqual(result.success, 1, '只应重置非 PAY_PER_USE');
+  });
+
+  it('应该根据名称黑名单跳过订阅', async () => {
+    const { service, apiClient } = createTestResetService();
+    const originalExclude = config.excludePlanNames;
+    config.excludePlanNames = ['BlackListPlan'];
+
+    const blacklisted = createIdealSubscription({
+      subscription_id: 'black-001',
+      plan_type: 'MONTHLY',
+      subscriptionName: 'BlackListPlan',
+    });
+
+    const normal = createIdealSubscription({ subscription_id: 'normal-001' });
+
+    apiClient.setSubscriptions([
+      toAPIFormat(blacklisted),
+      toAPIFormat(normal),
+    ]);
+
+    const result = await service.executeReset(RESET_TYPES.FIRST);
+
+    assert.strictEqual(result.eligible, 1, '命中黑名单的订阅应跳过');
+    assert.strictEqual(result.success, 1, '非黑名单订阅应被重置');
+
+    config.excludePlanNames = originalExclude;
   });
 });
 

@@ -33,6 +33,19 @@ export class ResetService {
         return `[${name}订阅(${subscription.id})]`;
     }
 
+    isPayPerUse(subscription) {
+        const planType = subscription.subscriptionPlan?.planType;
+        return planType === SUBSCRIPTION_TYPES.PAY_PER_USE;
+    }
+
+    isExcludedByName(subscription) {
+        const blacklist = config.excludePlanNames || [];
+        if (blacklist.length === 0) return false;
+
+        const name = (subscription.subscriptionPlan?.subscriptionName || '').trim().toLowerCase();
+        return blacklist.some(n => n.trim().toLowerCase() === name);
+    }
+
     /**
      * 初始化服务
      */
@@ -160,21 +173,21 @@ export class ResetService {
             ? TimeUtils.formatDateTime(subscription.lastCreditReset)
             : '从未重置';
 
-        // P0: PAYGO保护（最高优先级）
+        // P0: PAY_PER_USE 保护（最高优先级）
+        if (this.isPayPerUse(subscription)) {
+            Logger.warn(`${subId} 🚨 PAY_PER_USE 订阅，已跳过`);
+            return false;
+        }
+
+        // P0.5: 订阅名称黑名单
+        if (this.isExcludedByName(subscription)) {
+            Logger.info(`${subId} 名称命中黑名单，已跳过`);
+            return false;
+        }
+
+        // P1: 订阅类型检查（保留 PAYGO 保护）
         if (this.isPAYGO(subscription)) {
             Logger.warn(`${subId} 🚨 PAYGO订阅，已跳过`);
-            return false;
-        }
-
-        // P1: 订阅类型检查
-        if (subscription.subscriptionPlan.planType !== SUBSCRIPTION_TYPES.MONTHLY) {
-            Logger.debug(`${subId} 非MONTHLY套餐类型，已跳过`);
-            return false;
-        }
-
-        // P1.5: 付费周期检查 - 只允许月付订阅
-        if (subscription.billingCycle !== 'monthly') {
-            Logger.info(`${subId} 非月付订阅（${subscription.billingCycleDesc || subscription.billingCycle}），已跳过`);
             return false;
         }
 

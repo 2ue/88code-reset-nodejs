@@ -86,6 +86,12 @@ export const config = {
     rateLimitCapacity: parseInt(process.env.RATE_LIMIT_CAPACITY) || 10,
     rateLimitRefillRate: parseInt(process.env.RATE_LIMIT_REFILL_RATE) || 10,
 
+    // 订阅过滤配置
+    excludePlanNames: (process.env.EXCLUDE_PLAN_NAMES || '')
+        .split(',')
+        .map(name => name.trim())
+        .filter(name => name.length > 0),
+
     // 日志配置
     logLevel: process.env.LOG_LEVEL || 'info',
     logFileEnabled: process.env.LOG_FILE_ENABLED !== 'false',

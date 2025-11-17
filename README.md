@@ -223,6 +223,9 @@ FIRST_RESET_TIME=18:55
 # 二次重置时间（24小时制，支持智能延迟重置）
 SECOND_RESET_TIME=23:56
 
+# 不参与自动重置的订阅名称（逗号分隔，匹配 subscriptionPlan.subscriptionName，大小写不敏感）
+EXCLUDE_PLAN_NAMES=
+
 # 冷却期（单位：小时，88code官方规定5小时）
 COOLDOWN_HOURS=5
 ```
