@@ -6,6 +6,7 @@
 import Logger from '../utils/Logger.js';
 import { TelegramNotifier } from './TelegramNotifier.js';
 import { WeComNotifier } from './WeComNotifier.js';
+import { LocalFileNotifier } from './LocalFileNotifier.js';
 
 export class NotifierManager {
     constructor(config) {
@@ -19,6 +20,19 @@ export class NotifierManager {
     async initialize() {
         Logger.info('初始化通知模块...');
 
+        // 初始化本地文件通知器
+        if (this.config.enableLocalFile) {
+            const localFile = new LocalFileNotifier({
+                localFileOutputDir: this.config.localFileOutputDir,
+            });
+
+            const initialized = await localFile.initialize();
+            if (initialized) {
+                this.notifiers.push(localFile);
+                Logger.info('本地文件通知器已启用');
+            }
+        }
+
         // 初始化 Telegram 通知器
         if (this.config.enableTelegram) {
             const telegram = new TelegramNotifier({
@@ -29,6 +43,7 @@ export class NotifierManager {
             const initialized = await telegram.initialize();
             if (initialized) {
                 this.notifiers.push(telegram);
+                Logger.info('Telegram通知器已启用');
             }
         }
 
@@ -41,6 +56,7 @@ export class NotifierManager {
             const initialized = await weCom.initialize();
             if (initialized) {
                 this.notifiers.push(weCom);
+                Logger.info('企业微信通知器已启用');
             }
         }
 

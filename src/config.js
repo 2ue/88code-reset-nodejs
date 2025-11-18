@@ -116,6 +116,8 @@ export const config = {
     runTestOnStart: process.env.RUN_TEST_ON_START !== 'false',
 
     // 通知配置
+    enableLocalFile: process.env.ENABLE_LOCAL_FILE_NOTIFIER === 'true',
+    localFileOutputDir: process.env.LOCAL_FILE_NOTIFIER_OUTPUT_DIR || './notifications',
     enableTelegram: process.env.ENABLE_TELEGRAM === 'true',
     telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
     telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
