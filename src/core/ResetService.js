@@ -197,6 +197,25 @@ export class ResetService {
             return false;
         }
 
+        // P1.7: 订阅有效期检查（防止已过期但仍标记为激活的订阅触发重置）
+        const statusLabel = (subscription.subscriptionStatus || '').trim();
+        const statusLower = statusLabel.toLowerCase();
+        const statusActive =
+            !statusLabel ||
+            statusLower === 'active' ||
+            statusLower === '活跃中';
+
+        if (!statusActive) {
+            Logger.info(`${subId} 状态为${statusLabel || '未知'}，已跳过`);
+            return false;
+        }
+
+        const remainingDays = Number(subscription.remainingDays);
+        if (!Number.isNaN(remainingDays) && remainingDays <= 0) {
+            Logger.info(`${subId} 剩余天数为${subscription.remainingDays}，已跳过`);
+            return false;
+        }
+
         // P2: 冷却检查（第二次检查点允许延迟重置）
         const cooldown = TimeUtils.checkCooldown(subscription.lastCreditReset);
         if (!cooldown.passed) {

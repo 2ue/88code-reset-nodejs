@@ -62,6 +62,8 @@ function toAPIFormat(subscription) {
     lastCreditReset: subscription.last_reset_at,
     resetTimes: subscription.resetTimes,
     currentCredits: 50, // 默认余额
+    subscriptionStatus: subscription.subscriptionStatus || '活跃中',
+    remainingDays: subscription.remainingDays ?? 30,
     created_at: subscription.created_at,
   };
 }
@@ -180,6 +182,22 @@ describe('ResetService - P1 类型和状态过滤', () => {
     const result = await service.executeReset(RESET_TYPES.FIRST);
 
     assert.strictEqual(result.eligible, 1, 'Only active subscription should be eligible');
+  });
+
+  it('应该跳过已过期或剩余天数<=0的订阅', async () => {
+    const { service, apiClient } = createTestResetService();
+
+    const subscriptions = [
+      createIdealSubscription({ subscription_id: 'valid-active' }),
+      createIdealSubscription({ subscription_id: 'expired-status', subscriptionStatus: '已过期' }),
+      createIdealSubscription({ subscription_id: 'expired-days', remainingDays: 0 }),
+    ];
+
+    apiClient.setSubscriptions(subscriptions.map(toAPIFormat));
+
+    const result = await service.executeReset(RESET_TYPES.FIRST);
+
+    assert.strictEqual(result.eligible, 1, 'Only valid subscription should pass status filter');
   });
 });
 
