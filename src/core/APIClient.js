@@ -49,8 +49,8 @@ export class APIClient {
                     }
                 }
 
-                // 添加Authorization头
-                requestConfig.headers.Authorization = this.apiKey;
+                // 添加Authorization头（使用标准Bearer Token格式）
+                requestConfig.headers.Authorization = `Bearer ${this.apiKey}`;
 
                 // 详细API请求日志（可配置开关）
                 if (config.enableApiRequestLog) {
@@ -165,7 +165,15 @@ export class APIClient {
     async getUsage() {
         const execute = async () => {
             const response = await this.client.post(API_ENDPOINTS.USAGE);
-            return response.data;
+            // 处理 ResponseDTO 包装层（如果存在）
+            // 兼容两种响应格式：直接数据 或 {code, ok, msg, data} 包装
+            const responseData = response.data;
+            if (responseData && typeof responseData === 'object' && 'data' in responseData && 'ok' in responseData) {
+                // ResponseDTO 格式
+                return responseData.data;
+            }
+            // 直接返回数据格式（向后兼容）
+            return responseData;
         };
 
         if (config.enableRetry) {
@@ -182,7 +190,14 @@ export class APIClient {
     async getSubscriptions() {
         const execute = async () => {
             const response = await this.client.post(API_ENDPOINTS.SUBSCRIPTION);
-            return response.data;
+            // 处理 ResponseDTO 包装层（如果存在）
+            const responseData = response.data;
+            if (responseData && typeof responseData === 'object' && 'data' in responseData && 'ok' in responseData) {
+                // ResponseDTO 格式
+                return responseData.data;
+            }
+            // 直接返回数据格式（向后兼容）
+            return responseData;
         };
 
         const subscriptions = config.enableRetry
@@ -213,7 +228,19 @@ export class APIClient {
                 };
             }
 
-            return response.data;
+            // 处理 ResponseDTO 包装层（如果存在）
+            const responseData = response.data;
+            if (responseData && typeof responseData === 'object' && 'data' in responseData && 'ok' in responseData) {
+                // ResponseDTO 格式 - 返回整个响应（包含 ok, msg 等元信息）
+                return {
+                    success: responseData.ok,
+                    message: responseData.msg,
+                    data: responseData.data,
+                };
+            }
+
+            // 直接返回数据格式（向后兼容）
+            return responseData;
         };
 
         const result = config.enableRetry
