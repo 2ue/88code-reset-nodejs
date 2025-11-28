@@ -11,9 +11,9 @@ services:
       - .env
 
     # 也可以直接在这里覆盖环境变量
-    environment:
-      - NODE_ENV=production
-      - TZ=Asia/Shanghai
+    # environment:
+    #   - NODE_ENV=production
+    #   - TZ=Asia/Shanghai
 
     # 卷挂载（持久化日志和数据）
     volumes:

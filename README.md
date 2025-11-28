@@ -7,13 +7,11 @@
 - [⚠️ 免责声明](#️-免责声明)
 - [✨ 核心特性](#-核心特性)
 - [💡 额度说明](#-额度说明)
-- [📦 快速开始](#-快速开始)
+- [🚀 部署方式](#-部署方式)
+- [运行源码](#-运行源码)
 - [🎯 重置策略详解](#-重置策略详解)
 - [⚙️ 配置说明](#️-配置说明)
 - [📝 使用场景示例](#-使用场景示例)
-- [🚀 部署方案](#-部署方案)
-- [📊 日志说明](#-日志说明)
-- [🛡️ 安全特性](#️-安全特性)
 - [❓ 常见问题](#-常见问题)
 - [📈 监控](#-监控)
 - [🔧 开发](#-开发)
@@ -49,12 +47,9 @@
 - ✅ **智能订阅过滤**: 仅重置月付订阅（billingCycle=monthly），自动跳过年付订阅
 - ✅ **智能额度最大化**: 18:55和23:56双重重置，充分利用每日两次重置机会
 - ✅ **智能延迟重置**: 23:56冷却中时自动延迟到冷却结束后执行（支持跨天）
-- ✅ **PAYGO四重保护**: 防止误重置按量付费订阅（4字段检查）
-- ✅ **订阅状态分组**: 启动通知按活跃中/已过期分组显示，一目了然
 - ✅ **可配置冷却期**: 支持自定义冷却时间和缓冲时间（官方规定5小时间隔）
 - ✅ **3次重试机制**: 指数退避，自动恢复
 - ✅ **速率限制**: 令牌桶算法，防止触发API限流
-- ✅ **完整日志**: 文件+控制台，支持日志轮转
 - ✅ **多账号支持**: 批量管理多个API Key
 - ✅ **通知支持**: Telegram Bot、企业微信机器人通知
 - ✅ **Docker部署**: 一键部署，开箱即用
@@ -97,77 +92,6 @@
 
 ---
 
-## 📦 快速开始
-
-### 方式1: 使用 Docker 镜像（最简单）
-
-```bash
-# 1. 拉取镜像
-docker pull huby11111/88code-reset-nodejs:latest
-
-# 2. 配置 API Key
-cp .env.example .env
-vim .env  # 修改 API_KEYS 为你的真实密钥
-
-# 3. 运行容器
-docker run -d \
-  --name 88code-reset \
-  --env-file .env \
-  --restart unless-stopped \
-  -v $(pwd)/logs:/app/logs \
-  huby11111/88code-reset-nodejs:latest
-
-# 4. 查看日志
-docker logs -f 88code-reset
-```
-
-### 方式2: 使用 Docker Compose
-
-```bash
-# 1. 下载配置文件
-wget https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/docker-compose.yml
-
-# 2. 配置环境变量
-cp .env.example .env
-vim .env  # 填入你的 API_KEYS
-
-# 3. 启动服务
-docker-compose up -d
-
-# 4. 查看日志
-docker-compose logs -f
-```
-
-### 方式3: 源码运行
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/2ue/88code-reset-nodejs.git
-cd 88code-reset-nodejs
-
-# 2. 安装依赖（推荐使用 pnpm）
-pnpm install
-# 或使用 npm
-npm install
-
-# 3. 配置 API Key
-cp .env.example .env
-vim .env  # 填入你的 API_KEYS
-
-# 4. 测试运行
-pnpm run test
-
-# 5. 启动服务
-pnpm start
-
-# 6. (可选) 使用 PM2 守护进程
-pnpm install -g pm2
-pnpm run pm2:start
-pm2 status
-```
-
----
-
 ## 🎯 重置策略详解
 
 ### 核心原则
@@ -203,7 +127,7 @@ pm2 status
 
 ```bash
 cp .env.example .env
-vim .env  # 修改 API_KEYS 为你的真实密钥
+vim .env  # 修改 API_KEYS（多个用逗号分隔）
 ```
 
 **核心配置项：**
@@ -271,23 +195,37 @@ if (resetTimes < 1) {
 
 ---
 
-## 🚀 部署方案
+## 🚀 部署方式
 
-### 推荐部署方式
+### 一键部署（⭐ 最简单）
 
-#### 方式 1: Docker 部署（⭐ 推荐）
+```bash
+curl -fsSL https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/install.sh | bash
+```
 
-**优势**: 一键启动、环境隔离、易于管理
+**脚本会自动**：
+1. 检测 Docker / Docker Compose 环境
+2. 下载配置文件（自动选择最快镜像源）
+3. 引导输入 API Keys（支持多个，逗号分隔）
+4. 启动服务
+5. 可选查看日志
+
+---
+
+### Docker 部署
 
 ```bash
 # 1. 拉取镜像
 docker pull huby11111/88code-reset-nodejs:latest
 
-# 2. 配置 API Key
-cp .env.example .env
-vim .env  # 修改 API_KEYS 为你的真实密钥
+# 2. 下载配置文件模板
+wget https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/.env.example
 
-# 3. 运行容器
+# 3. 配置 API Key
+cp .env.example .env
+vim .env  # 修改 API_KEYS（多个用逗号分隔）
+
+# 4. 运行容器
 docker run -d \
   --name 88code-reset \
   --env-file .env \
@@ -295,21 +233,20 @@ docker run -d \
   -v $(pwd)/logs:/app/logs \
   huby11111/88code-reset-nodejs:latest
 
-# 4. 查看日志
+# 5. 查看日志
 docker logs -f 88code-reset
 ```
 
-#### 方式 2: Docker Compose
-
-**优势**: 配置管理更方便、支持多容器
+### Docker Compose
 
 ```bash
 # 1. 下载配置文件
 wget https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/docker-compose.yml
+wget https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/.env.example
 
 # 2. 配置环境变量
 cp .env.example .env
-vim .env  # 填入你的 API_KEYS
+vim .env  # 修改 API_KEYS（多个用逗号分隔）
 
 # 3. 启动服务
 docker-compose up -d
@@ -318,9 +255,9 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
-#### 方式 3: 本地源码运行
+---
 
-**优势**: 开发调试方便、配置灵活
+## 运行源码
 
 ```bash
 # 1. 克隆项目
@@ -332,75 +269,11 @@ pnpm install
 
 # 3. 配置环境
 cp .env.example .env
-vim .env  # 填入你的 API_KEYS
+vim .env  # 修改 API_KEYS（多个用逗号分隔）
 
 # 4. 启动服务（选择一种）
 pnpm start                # 直接运行
 pnpm run pm2:start        # PM2 守护进程（推荐生产环境）
-```
-
----
-
-## 📊 日志说明
-
-### 日志位置
-
-```
-logs/
-├── combined.log       # 所有日志
-├── error.log          # 错误日志
-└── reset-2025-11-06.log  # 按日期分割
-```
-
-### 日志示例
-
-```
-[2025-11-06 18:55:00] [INFO] ========== 开始执行首次重置 ==========
-[2025-11-06 18:55:01] [INFO] 获取到 3 个订阅
-[2025-11-06 18:55:02] [INFO] 符合条件的订阅: 2 个
-[2025-11-06 18:55:03] [INFO] [订阅123] 执行首次重置 (重置次数满 2/2，当前余额 68.5%)
-[2025-11-06 18:55:06] [SUCCESS] ✅ [订阅123] 重置成功: 34.25 → 50.00 credits
-[2025-11-06 18:55:07] [INFO] ========== 重置完成 ==========
-[2025-11-06 18:55:07] [INFO] 成功: 2, 失败: 0, 跳过: 0
-```
-
----
-
-## 🛡️ 安全特性
-
-### 多层订阅过滤机制
-
-```javascript
-// P0: PAYGO保护（最高优先级）
-防止误重置按量付费订阅
-4字段检查：subscriptionPlanName, subscriptionName, planType, PAY_PER_USE
-
-// P1: 订阅类型检查
-仅处理 MONTHLY 套餐类型
-
-// P1.5: 付费周期检查（新增）
-仅重置月付订阅（billingCycle='monthly'）
-自动跳过年付订阅（billingCycle='yearly'）
-
-// P1.6: 激活状态检查
-仅处理激活中的订阅（isActive=true）
-```
-
-### 速率限制
-
-```javascript
-// 令牌桶算法，10个令牌/分钟
-防止触发API限流
-自动等待令牌可用
-```
-
-### 冷却保护与延迟重置
-
-```javascript
-// 5小时冷却期检查（可配置）
-精确计算剩余时间
-智能延迟重置（23:56）
-支持跨天自动执行
 ```
 
 ---
@@ -432,34 +305,6 @@ A: 因为重置不是"清空余额"，而是**获得新的50 刀额度配额**�
 ```
 
 **差异：多50 刀！**
-
-**关键洞察**：当前余额的90%只是"还没用完"，不影响"重置能带来的新额度"。就像信用卡额度重置，不管你上个周期用了多少，重置后都是全额。
-
-**30天累积效应**：
-```
-如果20%的天数因"余额高"而跳过重置
-损失：6天 × 50 刀 = 300 刀/月
-```
-
-### Q: 年付订阅会被自动重置吗？
-
-A: **不会**。系统会自动识别并跳过年付订阅（billingCycle='yearly'）。
-
-**为什么排除年付订阅？**
-- 年付订阅通常有更高的额度限制和不同的重置策略
-- 避免误重置导致额度管理混乱
-- 本工具专门针对月付PLUS订阅优化
-
-**检查逻辑：**
-```
-✅ 月付订阅（billingCycle='monthly'）→ 正常重置
-❌ 年付订阅（billingCycle='yearly'）→ 自动跳过
-```
-
-日志示例：
-```
-[订阅123] 非月付订阅（年付），已跳过
-```
 
 ### Q: 如果我自己手动重置了怎么办？
 
