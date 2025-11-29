@@ -21,7 +21,7 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# 下载文件（自动尝试多个镜像源）
+# 下载文件
 download_file() {
     local path=$1  # 例如：2ue/88code-reset-nodejs/main/docker-compose.yml
     local file=$2
@@ -34,39 +34,14 @@ download_file() {
         fi
     fi
 
-    # 镜像源列表（按优先级）
-    local mirrors=(
-        "https://raw.githubusercontent.com"
-        "https://raw.gitmirror.com"
-        "https://mirror.ghproxy.com/https://raw.githubusercontent.com"
-    )
+    local url="https://raw.githubusercontent.com/${path}"
 
-    local success=false
-
-    # 临时禁用 set -e，允许下载失败后继续尝试
-    set +e
-
-    for mirror in "${mirrors[@]}"; do
-        local url="${mirror}/${path}"
-
-        if command_exists curl; then
-            if curl -fsSL --connect-timeout 5 "$url" -o "$file" 2>/dev/null; then
-                success=true
-                break
-            fi
-        elif command_exists wget; then
-            if wget --timeout=5 -q "$url" -O "$file" 2>/dev/null; then
-                success=true
-                break
-            fi
-        fi
-    done
-
-    # 恢复 set -e
-    set -e
-
-    if [ "$success" = false ]; then
-        print_error "下载失败: $file（已尝试所有镜像源）"
+    if command_exists curl; then
+        curl -fsSL "$url" -o "$file"
+    elif command_exists wget; then
+        wget -q "$url" -O "$file"
+    else
+        print_error "需要 curl 或 wget 来下载文件"
         exit 1
     fi
 
@@ -98,69 +73,64 @@ create_env_file() {
         exit 1
     fi
 
-    cp .env.example .env
-
-    # 替换 API_KEYS（使用更安全的方式）
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        sed -i '' "s|^API_KEYS=.*|API_KEYS=$api_keys|" .env
-    else
-        # Linux
-        sed -i "s|^API_KEYS=.*|API_KEYS=$api_keys|" .env
-    fi
+    # 复制模板并替换 API_KEYS（避免 sed 平台差异和注入风险）
+    grep -v '^API_KEYS=' .env.example > .env
+    echo "API_KEYS=${api_keys}" >> .env
 
     print_success "配置文件 .env 创建完成"
+}
+
+# 准备环境文件
+prepare_env_file() {
+    download_file "2ue/88code-reset-nodejs/main/.env.example" ".env.example"
+    local api_keys
+    api_keys=$(input_api_keys)
+    create_env_file "$api_keys"
+}
+
+# 询问是否查看日志
+ask_view_logs() {
+    local log_cmd=$1
+    echo ""
+    read -p "$(echo -e ${YELLOW}是否查看日志？[Y/n]: ${NC})" view_logs
+    if [[ ! $view_logs =~ ^[Nn]$ ]]; then
+        eval "$log_cmd"
+    fi
 }
 
 # 使用 docker-compose 部署
 deploy_with_compose() {
     local compose_cmd=$1
 
-    print_info "使用 $compose_cmd 部署..."
+    print_info "使用 ${compose_cmd} 部署..."
 
     # 下载文件
     download_file "2ue/88code-reset-nodejs/main/docker-compose.yml" "docker-compose.yml"
-    download_file "2ue/88code-reset-nodejs/main/.env.example" ".env.example"
-
-    # 输入配置
-    api_keys=$(input_api_keys)
-    create_env_file "$api_keys"
+    prepare_env_file
 
     # 启动服务
     print_info "启动服务..."
-    $compose_cmd up -d
+    ${compose_cmd} up -d
 
     print_success "服务启动成功！"
-
-    # 询问是否查看日志
-    echo ""
-    read -p "$(echo -e ${YELLOW}是否查看日志？[Y/n]: ${NC})" view_logs
-    if [[ ! $view_logs =~ ^[Nn]$ ]]; then
-        $compose_cmd logs -f
-    fi
+    ask_view_logs "${compose_cmd} logs -f"
 }
 
 # 使用 docker 部署
 deploy_with_docker() {
     print_info "使用 docker 部署..."
 
-    # 下载文件
-    download_file "2ue/88code-reset-nodejs/main/.env.example" ".env.example"
-
-    # 输入配置
-    api_keys=$(input_api_keys)
-    create_env_file "$api_keys"
+    # 准备环境文件
+    prepare_env_file
 
     # 拉取镜像
     print_info "拉取镜像..."
     docker pull huby11111/88code-reset-nodejs:latest
 
     # 停止并删除旧容器（如果存在）
-    if docker ps -a --format '{{.Names}}' | grep -q '^88code-reset$'; then
-        print_info "停止并删除旧容器..."
-        docker stop 88code-reset >/dev/null 2>&1 || true
-        docker rm 88code-reset >/dev/null 2>&1 || true
-    fi
+    print_info "清理旧容器..."
+    docker stop 88code-reset 2>/dev/null || true
+    docker rm 88code-reset 2>/dev/null || true
 
     # 启动容器
     print_info "启动容器..."
@@ -172,13 +142,7 @@ deploy_with_docker() {
         huby11111/88code-reset-nodejs:latest
 
     print_success "服务启动成功！"
-
-    # 询问是否查看日志
-    echo ""
-    read -p "$(echo -e ${YELLOW}是否查看日志？[Y/n]: ${NC})" view_logs
-    if [[ ! $view_logs =~ ^[Nn]$ ]]; then
-        docker logs -f 88code-reset
-    fi
+    ask_view_logs "docker logs -f 88code-reset"
 }
 
 # 主函数
