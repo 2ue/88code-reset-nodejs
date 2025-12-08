@@ -114,11 +114,22 @@ async function runTest() {
 
             // 获取订阅信息
             const subscriptions = await client.getSubscriptions();
-            Logger.info(`  - 订阅数量: ${subscriptions.length}`);
 
-            for (const sub of subscriptions) {
+            // 分离活跃和非活跃订阅
+            const activeSubscriptions = subscriptions.filter(sub => sub.subscriptionStatus === '活跃中');
+            const inactiveSubscriptions = subscriptions.filter(sub => sub.subscriptionStatus !== '活跃中');
+
+            Logger.info(`  - 活跃订阅数量: ${activeSubscriptions.length}/${subscriptions.length}`);
+
+            // 显示活跃订阅
+            for (const sub of activeSubscriptions) {
                 const percent = (sub.currentCredits / sub.subscriptionPlan.creditLimit * 100).toFixed(1);
                 Logger.info(`  - 订阅${sub.id}: ${sub.subscriptionPlanName}, 余额${percent}%, 剩余次数${sub.resetTimes}`);
+            }
+
+            // 如果有非活跃订阅，简要显示
+            if (inactiveSubscriptions.length > 0) {
+                Logger.info(`  - 已过期/暂停订阅: ${inactiveSubscriptions.length}个`);
             }
         } else {
             Logger.error(`❌ API Key 测试失败: ${Logger.sanitizeAPIKey(apiKey)}`);
@@ -184,9 +195,9 @@ async function sendStartupNotification(resetServices) {
             scheduled: 0,
             details: allSubscriptions.map(sub => {
                 const isPAYGO = sub.subscriptionPlanName === 'PAYGO' ||
-                               sub.subscriptionPlan?.subscriptionName === 'PAYGO' ||
-                               sub.subscriptionPlan?.planType === 'PAYGO' ||
-                               sub.subscriptionPlan?.planType === 'PAY_PER_USE';
+                    sub.subscriptionPlan?.subscriptionName === 'PAYGO' ||
+                    sub.subscriptionPlan?.planType === 'PAYGO' ||
+                    sub.subscriptionPlan?.planType === 'PAY_PER_USE';
 
                 // 余额显示格式：剩余/限额 (百分比%)
                 const percent = (sub.currentCredits / sub.subscriptionPlan.creditLimit * 100).toFixed(1);
