@@ -77,7 +77,7 @@ export const config = {
     cooldownHours: parseInt(process.env.COOLDOWN_HOURS) || 5,
 
     // 低余额重置配置
-    enableLowBalanceReset: process.env.ENABLE_LOW_BALANCE_RESET === 'true',
+    enableLowBalanceReset: process.env.ENABLE_LOW_BALANCE_RESET !== 'false',
     lowBalanceThreshold: parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 1,
     lowBalanceCheckTime: process.env.LOW_BALANCE_CHECK_TIME || '00:01',
 
