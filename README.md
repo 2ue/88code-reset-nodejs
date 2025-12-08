@@ -287,7 +287,7 @@ PM2 是 Node.js 进程管理器，支持后台运行、自动重启、开机自�
 npm install -g pm2
 
 # 2. 启动服务（在项目目录下）
-pm2 start                 # 自动读取 ecosystem.config.js 配置
+pm2 start ecosystem.config.cjs   # 需要显式指定配置文件（ES Module 项目）
 
 # 3. 常用管理命令
 pm2 logs 88code-reset     # 查看日志
