@@ -103,6 +103,13 @@ export class Scheduler {
         Logger.info(`定时检查: 每天 ${config.firstResetTime} 和 ${config.secondResetTime}`);
         Logger.info(`下次执行: ${formatTime(nextFirstTime)} (${TimeUtils.formatDuration(nextFirst)}后)`);
         Logger.info(`          ${formatTime(nextSecondTime)} (${TimeUtils.formatDuration(nextSecond)}后)`);
+
+        // 显示低额度检测的下次执行时间
+        if (config.enableLowBalanceReset) {
+            const nextLowBalance = TimeUtils.getMillisUntilNext(config.lowBalanceCheckTime);
+            const nextLowBalanceTime = new Date(now.getTime() + nextLowBalance);
+            Logger.info(`低额度检测: ${formatTime(nextLowBalanceTime)} (${TimeUtils.formatDuration(nextLowBalance)}后)`);
+        }
     }
 
     async executeWithLock(lockName, resetType) {
