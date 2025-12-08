@@ -267,8 +267,27 @@ export class ResetService {
             return await this.processSubscription(subscription, resetType);
         }
 
-        // 冷却未满，精确计算下次可重置时间（支持跨天）
+        // 冷却未满，精确计算下次可重置时间
         const cooldownEndTime = TimeUtils.getCooldownEndTime(subscription.lastCreditReset);
+
+        // 跨天检测：如果延迟执行会跨过午夜，放弃延迟重置以保留次日配额
+        const endOfDay = TimeUtils.getEndOfDay();
+        if (cooldownEndTime > endOfDay) {
+            const lastReset = TimeUtils.formatDateTime(subscription.lastCreditReset);
+            const scheduledTime = TimeUtils.formatDateTime(cooldownEndTime);
+            Logger.warn(
+                `${subId} 延迟重置将跨天执行（上次重置: ${lastReset}，预计执行: ${scheduledTime}），` +
+                `为避免浪费次日配额，跳过本次延迟重置`
+            );
+            return {
+                subscriptionId: subscription.id,
+                subscriptionName: subscription.subscriptionPlanName,
+                status: RESET_STATUS.SKIPPED,
+                message: '延迟重置将跨天，跳过以保留次日配额',
+                reason: 'CROSS_MIDNIGHT',
+            };
+        }
+
         const now = Date.now();
         const delayMs = Math.max(0, cooldownEndTime - now + 1000); // 额外等待1秒缓冲
         const lastReset = TimeUtils.formatDateTime(subscription.lastCreditReset);
