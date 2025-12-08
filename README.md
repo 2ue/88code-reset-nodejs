@@ -278,6 +278,39 @@ pnpm run pm2:start        # PM2 守护进程（推荐生产环境）
 
 ---
 
+### PM2 部署（推荐生产环境）
+
+PM2 是 Node.js 进程管理器，支持后台运行、自动重启、开机自启等功能。
+
+```bash
+# 1. 安装 PM2（如未安装）
+npm install -g pm2
+
+# 2. 启动服务（在项目目录下）
+pm2 start                 # 自动读取 ecosystem.config.cjs 配置
+
+# 3. 常用管理命令
+pm2 logs 88code-reset     # 查看日志
+pm2 stop 88code-reset     # 停止服务
+pm2 restart 88code-reset  # 重启服务
+pm2 delete 88code-reset   # 删除服务
+
+# 4. 设置开机自启（可选）
+pm2 save                  # 保存当前进程列表
+pm2 startup               # 生成开机启动脚本（按提示执行）
+```
+
+**或使用 pnpm 脚本：**
+
+```bash
+pnpm run pm2:start        # 启动
+pnpm run pm2:logs         # 查看日志
+pnpm run pm2:stop         # 停止
+pnpm run pm2:restart      # 重启
+```
+
+---
+
 ## ❓ 常见问题
 
 ### Q: 为什么18:55时余额还有90%，也要重置？
