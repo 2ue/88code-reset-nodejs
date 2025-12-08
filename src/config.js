@@ -76,6 +76,14 @@ export const config = {
     // 冷却期配置（单位：小时）
     cooldownHours: parseInt(process.env.COOLDOWN_HOURS) || 5,
 
+    // 低余额重置配置
+    enableLowBalanceReset: process.env.ENABLE_LOW_BALANCE_RESET === 'true',
+    lowBalanceThreshold: parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 1,
+    lowBalanceCheckTime: process.env.LOW_BALANCE_CHECK_TIME || '00:01',
+
+    // 测试模式（dry-run）
+    dryRun: process.env.DRY_RUN === 'true',
+
     // 重试配置
     enableRetry: process.env.ENABLE_RETRY !== 'false',
     maxRetries: parseInt(process.env.MAX_RETRIES) || 3,

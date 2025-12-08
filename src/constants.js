@@ -20,9 +20,10 @@ export const SUBSCRIPTION_TYPES = {
 
 // 重置类型（检查点标识）
 export const RESET_TYPES = {
-    FIRST: 'FIRST',   // 第一次检查点（默认18:55，可配置）
-    SECOND: 'SECOND', // 第二次检查点（默认23:58，可配置）
-    MANUAL: 'MANUAL', // 手动触发的重置
+    FIRST: 'FIRST',         // 第一次检查点（默认18:55，可配置）
+    SECOND: 'SECOND',       // 第二次检查点（默认23:58，可配置）
+    MANUAL: 'MANUAL',       // 手动触发的重置
+    LOW_BALANCE: 'LOW_BALANCE', // 低余额检测触发的重置
 };
 
 // 重置状态
@@ -76,6 +77,7 @@ export const LOG_LEVELS = {
 export const LOCK_NAMES = {
     FIRST_RESET: 'first-reset',
     SECOND_RESET: 'second-reset',
+    LOW_BALANCE_RESET: 'low-balance-reset',
 };
 
 export default {

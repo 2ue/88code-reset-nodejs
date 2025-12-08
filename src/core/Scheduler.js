@@ -70,6 +70,17 @@ export class Scheduler {
             this.jobs.push({ name: 'cleanup', job: cleanupJob });
         }
 
+        // 低余额检测任务（可选）
+        if (config.enableLowBalanceReset) {
+            const lowBalanceCron = TimeUtils.toCronExpression(config.lowBalanceCheckTime);
+            const lowBalanceJob = cron.schedule(lowBalanceCron, () => {
+                this.executeWithLock(LOCK_NAMES.LOW_BALANCE_RESET, RESET_TYPES.LOW_BALANCE);
+            }, { timezone: config.timezone });
+
+            this.jobs.push({ name: 'low-balance-reset', job: lowBalanceJob });
+            Logger.info(`低余额检测: 每天 ${config.lowBalanceCheckTime}，阈值 ${config.lowBalanceThreshold} 美元`);
+        }
+
         // 计算下次执行时间
         const nextFirst = TimeUtils.getMillisUntilNext(config.firstResetTime);
         const nextSecond = TimeUtils.getMillisUntilNext(config.secondResetTime);

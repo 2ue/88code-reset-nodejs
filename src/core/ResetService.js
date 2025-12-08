@@ -47,6 +47,15 @@ export class ResetService {
     }
 
     /**
+     * 判断订阅余额是否低于阈值
+     * @param {Object} subscription - 订阅对象
+     * @returns {boolean}
+     */
+    isLowBalance(subscription) {
+        return (subscription.currentCredits || 0) < config.lowBalanceThreshold;
+    }
+
+    /**
      * 初始化服务
      */
     async initialize() {
@@ -59,7 +68,14 @@ export class ResetService {
      * @returns {Promise<Object>} 重置结果
      */
     async executeReset(resetType) {
-        Logger.info(`========== 开始执行${resetType === RESET_TYPES.FIRST ? '第一次检查点' : '第二次检查点'}重置 ==========`);
+        const typeLabel = {
+            [RESET_TYPES.FIRST]: '第一次检查点',
+            [RESET_TYPES.SECOND]: '第二次检查点',
+            [RESET_TYPES.MANUAL]: '手动',
+            [RESET_TYPES.LOW_BALANCE]: '低余额检测',
+        }[resetType] || resetType;
+
+        Logger.info(`========== 开始执行${typeLabel}重置${config.dryRun ? ' [DRY-RUN模式]' : ''} ==========`);
 
         const result = {
             resetType,
@@ -102,8 +118,8 @@ export class ResetService {
 
             // 3. 逐个处理订阅（串行，避免触发限流）
             for (const subscription of eligibleSubscriptions) {
-                // 如果是第二次重置，尝试处理延迟重置
-                if (resetType === RESET_TYPES.SECOND) {
+                // 第二次重置和低余额检测：支持延迟重置
+                if (resetType === RESET_TYPES.SECOND || resetType === RESET_TYPES.LOW_BALANCE) {
                     const detail = await this.processSubscriptionWithDelay(subscription, resetType);
                     result.details.push(detail);
 
@@ -216,7 +232,7 @@ export class ResetService {
             return false;
         }
 
-        // P2: 冷却检查（第二次检查点允许延迟重置）
+        // P2: 冷却检查（第二次检查点和低余额检测允许延迟重置）
         const cooldown = TimeUtils.checkCooldown(subscription.lastCreditReset);
         if (!cooldown.passed) {
             if (resetType === RESET_TYPES.FIRST) {
@@ -224,7 +240,7 @@ export class ResetService {
                 Logger.warn(`${subId} 冷却中（上次重置: ${lastReset}），还需 ${cooldown.formatted}`);
                 return false;
             }
-            // 第二次检查点：冷却未过也允许通过，进入延迟重置逻辑
+            // 第二次检查点和低余额检测：冷却未过也允许通过，进入延迟重置逻辑
             // 注意：这里不输出日志，避免与后续resetTimes检查的日志矛盾
             // 实际是否延迟重置由processSubscriptionWithDelay决定
         }
@@ -246,6 +262,23 @@ export class ResetService {
                 );
                 return false;
             }
+        } else if (resetType === RESET_TYPES.LOW_BALANCE) {
+            // 低余额检测：需要 resetTimes >= 1 且余额低于阈值
+            if (subscription.resetTimes < 1) {
+                Logger.info(`${subId} 低余额检测跳过（剩余${subscription.resetTimes}次，次数已用完）`);
+                return false;
+            }
+            if (!this.isLowBalance(subscription)) {
+                Logger.debug(
+                    `${subId} 余额 ${(subscription.currentCredits || 0).toFixed(2)} 美元，` +
+                    `未低于阈值 ${config.lowBalanceThreshold} 美元`
+                );
+                return false;
+            }
+            Logger.info(
+                `${subId} 余额 ${(subscription.currentCredits || 0).toFixed(2)} 美元，` +
+                `低于阈值 ${config.lowBalanceThreshold} 美元，触发重置`
+            );
         }
 
         return true;
@@ -399,13 +432,24 @@ export class ResetService {
                 Logger.info(
                     `${subId} 执行第一次检查点重置（剩余${subscription.resetTimes}次，当前余额 ${creditPercent.toFixed(1)}%）`
                 );
+            } else if (resetType === RESET_TYPES.LOW_BALANCE) {
+                Logger.info(
+                    `${subId} 执行低余额重置（剩余${subscription.resetTimes}次，当前余额 ${subscription.currentCredits.toFixed(2)} 美元）`
+                );
             } else {
                 Logger.info(
                     `${subId} 执行第二次检查点重置（剩余${subscription.resetTimes}次，当前余额 ${creditPercent.toFixed(1)}%）`
                 );
             }
 
-            // 执行重置
+            // 执行重置（或dry-run模式跳过）
+            if (config.dryRun) {
+                Logger.info(`${subId} [DRY-RUN] 跳过实际重置操作`);
+                detail.status = RESET_STATUS.SKIPPED;
+                detail.message = '[DRY-RUN] 测试模式，跳过重置';
+                return detail;
+            }
+
             await this.apiClient.resetCredits(subscription.id);
 
             // 等待API更新（使用配置值）
