@@ -121,15 +121,6 @@
 
 ## ⚙️ 配置说明
 
-### 必填配置
-
-**推荐方式：复制模板文件**
-
-```bash
-cp .env.example .env
-vim .env  # 修改 API_KEYS（多个用逗号分隔）
-```
-
 **核心配置项：**
 
 ```env
@@ -200,6 +191,8 @@ if (resetTimes < 1) {
 ### 一键部署（⭐ 最简单）
 
 ```bash
+mkdir 88code-reset-nodejs
+cd 88code-reset-nodejs
 curl -fsSL https://raw.githubusercontent.com/2ue/88code-reset-nodejs/main/install.sh | bash
 ```
 

@@ -2,8 +2,8 @@
 
 # 88code Reset Service - 一键部署脚本
 
-set -e  # 遇到错误立即退出
-set -o pipefail  # 管道命令失败时退出
+set -e
+set -o pipefail
 
 # 颜色定义
 RED='\033[0;31m'
@@ -11,173 +11,135 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# 打印函数
-print_success() { echo -e "${GREEN}✓ $1${NC}"; }
-print_error() { echo -e "${RED}✗ $1${NC}"; }
-print_info() { echo -e "${YELLOW}ℹ $1${NC}"; }
+# 项目信息
+REPO="2ue/88code-reset-nodejs"
+BRANCH="main"
+DOCKER_IMAGE="huby11111/88code-reset-nodejs:latest"
+CONTAINER_NAME="88code-reset"
 
-# 检查命令是否存在
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
+# 工具函数
+die() { echo -e "${RED}✗ $1${NC}" >&2; exit 1; }
+info() { echo -e "${YELLOW}ℹ $1${NC}"; }
+success() { echo -e "${GREEN}✓ $1${NC}"; }
+
+# 检查 curl
+command -v curl >/dev/null 2>&1 || die "需要 curl，请安装: apt-get install curl"
 
 # 下载文件
-download_file() {
-    local path=$1  # 例如：2ue/88code-reset-nodejs/main/docker-compose.yml
-    local file=$2
+download() {
+    local file=$1
+    local url="https://raw.githubusercontent.com/${REPO}/${BRANCH}/${file}"
 
     if [ -f "$file" ]; then
-        read -p "$(echo -e ${YELLOW}文件 $file 已存在，是否覆盖？[y/N]: ${NC})" overwrite
-        if [[ ! $overwrite =~ ^[Yy]$ ]]; then
-            print_info "跳过下载 $file"
-            return 0
-        fi
+        read -p "$(echo -e ${YELLOW}文件 $file 已存在，是否覆盖？[y/N]: ${NC})" ans
+        [[ $ans =~ ^[Yy]$ ]] || { info "跳过 $file"; return 0; }
     fi
 
-    local url="https://raw.githubusercontent.com/${path}"
-
-    if command_exists curl; then
-        curl -fsSL "$url" -o "$file"
-    elif command_exists wget; then
-        wget -q "$url" -O "$file"
-    else
-        print_error "需要 curl 或 wget 来下载文件"
-        exit 1
-    fi
-
-    print_success "下载完成: $file"
+    curl -fsSL "$url" -o "$file" || die "下载失败: $file"
+    success "下载: $file"
 }
 
-# 输入 API Keys
-input_api_keys() {
+# 获取 API Keys
+get_api_keys() {
     echo ""
-    print_info "请输入 88code API Keys（多个用逗号分隔）："
-    print_info "格式示例: 88_xxx,88_yyy 或单个 88_xxx"
-    read -p "> " api_keys
-
-    # 验证输入
-    if [ -z "$api_keys" ]; then
-        print_error "API Keys 不能为空"
-        exit 1
-    fi
-
-    echo "$api_keys"
+    info "请输入 88code API Keys（多个用逗号分隔）"
+    info "格式: 88_xxx,88_yyy 或单个 88_xxx"
+    read -p "> " keys
+    [ -z "$keys" ] && die "API Keys 不能为空"
+    echo "$keys"
 }
 
-# 创建 .env 文件
-create_env_file() {
-    local api_keys=$1
+# 创建 .env
+create_env() {
+    local keys=$1
+    [ -f ".env.example" ] || die ".env.example 不存在"
 
-    if [ ! -f ".env.example" ]; then
-        print_error ".env.example 文件不存在"
-        exit 1
-    fi
-
-    # 复制模板并替换 API_KEYS（避免 sed 平台差异和注入风险）
+    # 安全地写入 API_KEYS（避免 shell 注入）
     grep -v '^API_KEYS=' .env.example > .env
-    echo "API_KEYS=${api_keys}" >> .env
+    printf 'API_KEYS=%s\n' "$keys" >> .env
 
-    print_success "配置文件 .env 创建完成"
+    success "配置文件 .env 创建完成"
 }
 
-# 准备环境文件
-prepare_env_file() {
-    download_file "2ue/88code-reset-nodejs/main/.env.example" ".env.example"
-    local api_keys
-    api_keys=$(input_api_keys)
-    create_env_file "$api_keys"
+# 准备环境
+prepare_env() {
+    download ".env.example"
+    local keys
+    keys=$(get_api_keys)
+    create_env "$keys"
 }
 
-# 询问是否查看日志
-ask_view_logs() {
-    local log_cmd=$1
+# 查看日志
+view_logs() {
     echo ""
-    read -p "$(echo -e ${YELLOW}是否查看日志？[Y/n]: ${NC})" view_logs
-    if [[ ! $view_logs =~ ^[Nn]$ ]]; then
-        eval "$log_cmd"
+    read -p "$(echo -e ${YELLOW}是否查看日志？[Y/n]: ${NC})" ans
+    [[ $ans =~ ^[Nn]$ ]] && return 0
+
+    # 直接执行，不用 eval
+    if [ -n "$COMPOSE_CMD" ]; then
+        $COMPOSE_CMD logs -f
+    else
+        docker logs -f "$CONTAINER_NAME"
     fi
 }
 
-# 使用 docker-compose 部署
-deploy_with_compose() {
-    local compose_cmd=$1
+# Docker Compose 部署
+deploy_compose() {
+    local cmd=$1
+    info "使用 $cmd 部署..."
 
-    print_info "使用 ${compose_cmd} 部署..."
+    download "docker-compose.yml"
+    prepare_env
 
-    # 下载文件
-    download_file "2ue/88code-reset-nodejs/main/docker-compose.yml" "docker-compose.yml"
-    prepare_env_file
+    info "启动服务..."
+    $cmd up -d
 
-    # 启动服务
-    print_info "启动服务..."
-    ${compose_cmd} up -d
-
-    print_success "服务启动成功！"
-    ask_view_logs "${compose_cmd} logs -f"
+    success "服务启动成功"
+    COMPOSE_CMD=$cmd view_logs
 }
 
-# 使用 docker 部署
-deploy_with_docker() {
-    print_info "使用 docker 部署..."
+# Docker 部署
+deploy_docker() {
+    info "使用 docker 部署..."
 
-    # 准备环境文件
-    prepare_env_file
+    prepare_env
 
-    # 拉取镜像
-    print_info "拉取镜像..."
-    docker pull huby11111/88code-reset-nodejs:latest
+    info "拉取镜像..."
+    docker pull "$DOCKER_IMAGE"
 
-    # 停止并删除旧容器（如果存在）
-    print_info "清理旧容器..."
-    docker stop 88code-reset 2>/dev/null || true
-    docker rm 88code-reset 2>/dev/null || true
+    info "清理旧容器..."
+    docker stop "$CONTAINER_NAME" 2>/dev/null || true
+    docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
-    # 启动容器
-    print_info "启动容器..."
+    info "启动容器..."
     docker run -d \
-        --name 88code-reset \
+        --name "$CONTAINER_NAME" \
         --env-file .env \
         --restart unless-stopped \
         -v "$(pwd)/logs:/app/logs" \
-        huby11111/88code-reset-nodejs:latest
+        "$DOCKER_IMAGE"
 
-    print_success "服务启动成功！"
-    ask_view_logs "docker logs -f 88code-reset"
+    success "服务启动成功"
+    view_logs
 }
 
 # 主函数
 main() {
     echo "========================================"
-    echo "  88code Reset Service - 一键部署脚本"
+    echo "  88code Reset Service - 一键部署"
     echo "========================================"
     echo ""
 
-    # 检查 docker-compose（优先）
-    if command_exists docker-compose; then
-        deploy_with_compose "docker-compose"
-        return
+    # 检测部署方式（按优先级）
+    if command -v docker-compose >/dev/null 2>&1; then
+        deploy_compose "docker-compose"
+    elif docker compose version >/dev/null 2>&1; then
+        deploy_compose "docker compose"
+    elif command -v docker >/dev/null 2>&1; then
+        deploy_docker
+    else
+        die "未找到 Docker\n请安装: https://docs.docker.com/get-docker/"
     fi
-
-    # 检查 docker compose（新版本）
-    if docker compose version >/dev/null 2>&1; then
-        deploy_with_compose "docker compose"
-        return
-    fi
-
-    # 检查 docker
-    if command_exists docker; then
-        deploy_with_docker
-        return
-    fi
-
-    # 都不存在
-    print_error "未找到 Docker 或 Docker Compose"
-    echo ""
-    print_info "请先安装 Docker："
-    echo "  官方文档: https://docs.docker.com/get-docker/"
-    echo ""
-    exit 1
 }
 
-# 执行
 main
