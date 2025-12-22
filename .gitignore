@@ -84,7 +84,6 @@ Desktop.ini
 .pm2/
 pm2.log
 pm2-error.log
-ecosystem.config.js
 
 # ==================== Docker ====================
 # 不需要忽略 Docker 文件，应该提交到仓库

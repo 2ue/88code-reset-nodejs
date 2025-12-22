@@ -70,6 +70,17 @@ export class Scheduler {
             this.jobs.push({ name: 'cleanup', job: cleanupJob });
         }
 
+        // 低余额检测任务（可选）
+        if (config.enableLowBalanceReset) {
+            const lowBalanceCron = TimeUtils.toCronExpression(config.lowBalanceCheckTime);
+            const lowBalanceJob = cron.schedule(lowBalanceCron, () => {
+                this.executeWithLock(LOCK_NAMES.LOW_BALANCE_RESET, RESET_TYPES.LOW_BALANCE);
+            }, { timezone: config.timezone });
+
+            this.jobs.push({ name: 'low-balance-reset', job: lowBalanceJob });
+            Logger.info(`低余额检测: 每天 ${config.lowBalanceCheckTime}，阈值 ${config.lowBalanceThreshold} 美元`);
+        }
+
         // 计算下次执行时间
         const nextFirst = TimeUtils.getMillisUntilNext(config.firstResetTime);
         const nextSecond = TimeUtils.getMillisUntilNext(config.secondResetTime);
@@ -92,6 +103,13 @@ export class Scheduler {
         Logger.info(`定时检查: 每天 ${config.firstResetTime} 和 ${config.secondResetTime}`);
         Logger.info(`下次执行: ${formatTime(nextFirstTime)} (${TimeUtils.formatDuration(nextFirst)}后)`);
         Logger.info(`          ${formatTime(nextSecondTime)} (${TimeUtils.formatDuration(nextSecond)}后)`);
+
+        // 显示低额度检测的下次执行时间
+        if (config.enableLowBalanceReset) {
+            const nextLowBalance = TimeUtils.getMillisUntilNext(config.lowBalanceCheckTime);
+            const nextLowBalanceTime = new Date(now.getTime() + nextLowBalance);
+            Logger.info(`低额度检测: ${formatTime(nextLowBalanceTime)} (${TimeUtils.formatDuration(nextLowBalance)}后)`);
+        }
     }
 
     async executeWithLock(lockName, resetType) {

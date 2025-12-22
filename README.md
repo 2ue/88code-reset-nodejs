@@ -9,8 +9,11 @@
 - [💡 额度说明](#-额度说明)
 - [🚀 部署方式](#-部署方式)
 - [运行源码](#-运行源码)
+- [PM2 部署](#pm2-部署推荐生产环境)
 - [🎯 重置策略详解](#-重置策略详解)
 - [⚙️ 配置说明](#️-配置说明)
+  - [重置策略配置](#重置策略配置)
+  - [低余额重置配置](#低余额重置配置)
 - [📝 使用场景示例](#-使用场景示例)
 - [❓ 常见问题](#-常见问题)
 - [📈 监控](#-监控)
@@ -135,6 +138,29 @@ EXCLUDE_PLAN_NAMES=
 COOLDOWN_HOURS=5
 ```
 
+### 低余额重置配置
+
+低余额重置是一个**补充机制**，用于在凌晨检测余额极低的订阅并触发重置，避免次日额度不足。
+
+```env
+# 是否启用低余额自动重置（默认开启）
+ENABLE_LOW_BALANCE_RESET=true
+
+# 低余额阈值（美元），余额低于此值时触发重置
+LOW_BALANCE_THRESHOLD=1
+
+# 低余额检测时间（24小时制），建议设置在凌晨
+LOW_BALANCE_CHECK_TIME=00:01
+
+# 是否在启动时执行一次低余额检测（默认关闭）
+RUN_LOW_BALANCE_CHECK_ON_START=false
+```
+
+**工作原理：**
+- 每天在 `LOW_BALANCE_CHECK_TIME` 时检测所有订阅余额
+- 如果余额低于 `LOW_BALANCE_THRESHOLD` 且有可用重置次数，则触发重置
+- 与定时重置互补，确保不会因余额耗尽而影响使用
+
 ### 智能延迟重置说明
 
 当23:56执行二次重置时，如果还在5小时冷却期内：
@@ -255,8 +281,45 @@ cp .env.example .env
 vim .env  # 修改 API_KEYS（多个用逗号分隔）
 
 # 4. 启动服务（选择一种）
-pnpm start                # 直接运行
-pnpm run pm2:start        # PM2 守护进程（推荐生产环境）
+pnpm start                           # 直接运行（前台）
+pnpm run pm2:start                   # PM2 守护进程（需先安装 PM2）
+pm2 start ecosystem.config.cjs       # 或直接使用 PM2 命令
+
+# 💡 如果使用 PM2，需要先全局安装：
+# pnpm add -g pm2
+```
+
+---
+
+### PM2 部署（推荐生产环境）
+
+PM2 是 Node.js 进程管理器，支持后台运行、自动重启、开机自启等功能。
+
+```bash
+# 1. 安装 PM2（如未安装）
+pnpm add -g pm2
+
+# 2. 启动服务（在项目目录下）
+pm2 start ecosystem.config.cjs   # 需要显式指定配置文件（ES Module 项目）
+
+# 3. 常用管理命令
+pm2 logs 88code-reset     # 查看日志
+pm2 stop 88code-reset     # 停止服务
+pm2 restart 88code-reset  # 重启服务
+pm2 delete 88code-reset   # 删除服务
+
+# 4. 设置开机自启（可选）
+pm2 save                  # 保存当前进程列表
+pm2 startup               # 生成开机启动脚本（按提示执行）
+```
+
+**或使用 pnpm 脚本：**
+
+```bash
+pnpm run pm2:start        # 启动
+pnpm run pm2:logs         # 查看日志
+pnpm run pm2:stop         # 停止
+pnpm run pm2:restart      # 重启
 ```
 
 ---

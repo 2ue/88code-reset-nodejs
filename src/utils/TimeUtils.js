@@ -209,6 +209,17 @@ export class TimeUtils {
     }
 
     /**
+     * 获取当天结束时间戳（23:59:59.999）
+     * 使用 API 时区（Asia/Shanghai）
+     * @returns {number} 当天结束时间戳（毫秒）
+     */
+    static getEndOfDay() {
+        return TimeUtils.nowInApiTimezone()
+            .endOf('day')
+            .valueOf();
+    }
+
+    /**
      * 获取 API 时区的当前时间
      * @returns {dayjs.Dayjs}
      */
