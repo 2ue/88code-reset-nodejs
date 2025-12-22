@@ -80,6 +80,7 @@ export const config = {
     enableLowBalanceReset: process.env.ENABLE_LOW_BALANCE_RESET !== 'false',
     lowBalanceThreshold: parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 1,
     lowBalanceCheckTime: process.env.LOW_BALANCE_CHECK_TIME || '00:01',
+    runLowBalanceCheckOnStart: process.env.RUN_LOW_BALANCE_CHECK_ON_START === 'true',
 
     // 测试模式（dry-run）
     dryRun: process.env.DRY_RUN === 'true',

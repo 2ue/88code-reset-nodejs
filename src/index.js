@@ -93,6 +93,13 @@ async function main() {
 
         Logger.success('服务启动成功！');
 
+        // 启动时低余额检测（可选）
+        if (config.enableLowBalanceReset && config.runLowBalanceCheckOnStart) {
+            Logger.info('========== 启动时低余额检测 ==========');
+            const { RESET_TYPES } = await import('./constants.js');
+            await resetService.executeReset(RESET_TYPES.LOW_BALANCE);
+        }
+
         // 发送启动成功通知（如果配置了通知器）
         await sendStartupNotification(resetServices);
 
